@@ -1,0 +1,2389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Global Logistics DSS — ENGG*6291</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+:root{
+  --bg:#0f172a; --bg1:#1e293b; --bg2:#172033; --bgr:#131d31;
+  --line:#2b3a52; --line2:#334966;
+  --blue:#2563eb; --blue-d:#1d4ed8; --jade:#22c55e; --gold:#f59e0b; --red:#ef4444;
+  --txt:#f0f6ff; --mut:#a8c4e0; --dim:#6b8aaa;
+  --disp:'Space Grotesk',system-ui,sans-serif;
+  --body:'Inter',system-ui,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+  --r:14px; --r-sm:9px;
+}
+body.light{
+  --bg:#f4f6fb; --bg1:#ffffff; --bg2:#eef2f8; --bgr:#e7edf6;
+  --line:#d3dded; --line2:#b9c8df;
+  --blue:#1d4ed8; --blue-d:#1e40af; --jade:#15803d; --gold:#b45309; --red:#b91c1c;
+  --txt:#0b1626; --mut:#2b3b50; --dim:#46586d;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg); color:var(--txt); font-family:var(--body);
+  font-size:15px; line-height:1.55; -webkit-font-smoothing:antialiased;
+  min-height:100vh; transition:background .25s,color .25s;
+}
+::selection{background:var(--blue);color:#fff}
+a{color:var(--blue);text-decoration:none}
+
+/* ---------- Layout shell ---------- */
+.wrap{max-width:1180px;margin:0 auto;padding:0 22px}
+header.top{
+  border-bottom:1px solid var(--line); background:linear-gradient(180deg,var(--bg2),var(--bg));
+  position:sticky; top:0; z-index:40; backdrop-filter:blur(6px);
+}
+.top .wrap{display:flex;align-items:center;gap:12px;min-height:62px;flex-wrap:wrap;padding-top:8px;padding-bottom:8px}
+.brand{display:flex;align-items:center;gap:12px;cursor:pointer}
+.brand .mark{
+  width:34px;height:34px;border-radius:9px;
+  background:conic-gradient(from 210deg,var(--blue),var(--jade),var(--gold),var(--blue));
+  display:grid;place-items:center;font-family:var(--disp);font-weight:700;color:#0b1220;font-size:16px;
+}
+.brand b{font-family:var(--disp);font-weight:600;letter-spacing:.2px;font-size:16px}
+.brand span{color:var(--dim);font-size:12px;margin-left:2px}
+.top nav{display:flex;gap:4px;flex-wrap:wrap}
+.hactions{margin-left:auto;display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+.top nav button{
+  font:inherit;font-size:13px;color:var(--mut);background:transparent;border:1px solid transparent;
+  padding:7px 13px;border-radius:8px;cursor:pointer;transition:.15s;
+}
+.top nav button:hover{color:var(--txt);background:var(--bg1)}
+.top nav button.active{color:#fff;background:var(--blue);border-color:var(--blue)}
+.solver-chip{
+  display:flex;align-items:center;gap:7px;font-size:11px;color:var(--dim);
+  border:1px solid var(--line);padding:5px 10px;border-radius:20px;font-family:var(--mono);
+}
+.solver-chip .dot{width:7px;height:7px;border-radius:50%;background:var(--dim);transition:.3s}
+.solver-chip.ready .dot{background:var(--jade);box-shadow:0 0 8px var(--jade)}
+.solver-chip.loading .dot{background:var(--gold);animation:pulse 1s infinite}
+@keyframes pulse{50%{opacity:.3}}
+
+main{padding:34px 0 80px}
+.view{display:none;animation:fade .35s ease}
+.view.show{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+/* ---------- Hero / menu ---------- */
+.hero{padding:18px 0 30px;border-bottom:1px solid var(--line);margin-bottom:34px}
+.eyebrow{
+  font-family:var(--mono);font-size:11.5px;letter-spacing:2px;text-transform:uppercase;
+  color:var(--gold);margin-bottom:14px;
+}
+.hero h1{font-family:var(--disp);font-weight:700;font-size:clamp(30px,4.6vw,50px);line-height:1.05;letter-spacing:-1px}
+.hero h1 em{font-style:normal;color:var(--blue)}
+.hero p{color:var(--mut);max-width:680px;margin-top:16px;font-size:15.5px}
+.scenario{
+  margin-top:22px;display:flex;gap:14px;flex-wrap:wrap;
+}
+.scenario .tag{
+  font-family:var(--mono);font-size:11px;color:var(--mut);
+  border:1px solid var(--line);border-radius:7px;padding:6px 11px;
+}
+.scenario .tag b{color:var(--txt);font-weight:500}
+
+.menu{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-top:6px}
+@media(max-width:820px){.menu{grid-template-columns:1fr}}
+.decision-center{border:1px solid var(--line);border-radius:var(--r);background:linear-gradient(135deg,var(--bg1),var(--bg2));padding:20px 22px;margin:0 0 22px}
+.dc-top{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;flex-wrap:wrap}
+.dc-top h3{font-family:var(--disp);font-size:18px;font-weight:600;margin-bottom:3px}.dc-top p{font-size:12.5px;color:var(--mut);max-width:620px}
+.preset-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.preset{font:inherit;font-size:12px;color:var(--mut);background:var(--bg);border:1px solid var(--line);border-radius:20px;padding:7px 11px;cursor:pointer;transition:.15s}.preset:hover{color:#fff;border-color:var(--blue);background:var(--blue)}
+.dc-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.draft-status{font-family:var(--mono);font-size:10.5px;color:var(--dim)}
+.progress-grid{display:grid;grid-template-columns:repeat(5,minmax(120px,1fr));gap:8px;margin-top:18px}.progress-card{border:1px solid var(--line);border-radius:9px;background:rgba(15,23,42,.34);padding:10px}.progress-card .k{font-family:var(--mono);font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.4px}.progress-card .v{font-size:12px;color:var(--mut);margin-top:3px}.progress-card.done{border-color:rgba(34,197,94,.45)}.progress-card.done .v{color:var(--jade)}
+@media(max-width:820px){.progress-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.opt{
+  border:1px solid var(--line);border-radius:var(--r);background:var(--bg1);
+  padding:26px;cursor:pointer;transition:.2s;position:relative;overflow:hidden;
+}
+.opt:hover{border-color:var(--blue);transform:translateY(-3px)}
+.opt:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.opt::before{
+  content:"";position:absolute;inset:0 auto 0 0;width:4px;
+  background:linear-gradient(var(--blue),var(--jade));
+}
+.opt .num{font-family:var(--mono);font-size:12px;color:var(--dim)}
+.opt h3{font-family:var(--disp);font-weight:600;font-size:21px;margin:10px 0 4px}
+.opt .sub{color:var(--mut);font-size:13.5px;margin-bottom:18px}
+.opt ol{list-style:none;display:flex;flex-direction:column;gap:9px}
+.opt ol li{display:flex;gap:11px;align-items:flex-start;font-size:13.5px;color:var(--mut)}
+.opt ol li .ph{
+  font-family:var(--mono);font-size:10.5px;color:var(--blue);border:1px solid var(--line2);
+  border-radius:5px;padding:2px 6px;flex:none;margin-top:1px;
+}
+.opt ol li b{color:var(--txt);font-weight:500}
+.opt .go{
+  margin-top:20px;display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:600;
+  color:var(--blue);
+}
+.opt:hover .go{gap:12px}
+
+/* ---------- Section module shell ---------- */
+.crumb{display:flex;align-items:center;gap:9px;font-size:12.5px;color:var(--dim);margin-bottom:8px;font-family:var(--mono)}
+.crumb a{color:var(--mut);cursor:pointer}
+.crumb a:hover{color:var(--blue)}
+.phase-head{display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap;border-bottom:1px solid var(--line);padding-bottom:18px;margin-bottom:26px}
+.phase-head .pn{
+  font-family:var(--disp);font-weight:700;font-size:13px;color:#0b1220;
+  background:var(--blue);border-radius:8px;padding:5px 10px;letter-spacing:.5px;
+}
+.phase-head h2{font-family:var(--disp);font-weight:600;font-size:26px;letter-spacing:-.4px}
+.phase-head p{color:var(--mut);font-size:14px;flex-basis:100%;margin-top:2px}
+
+.panel{
+  border:1px solid var(--line);border-radius:var(--r);background:var(--bg1);
+  padding:22px;margin-bottom:22px;
+}
+.panel > h4{
+  font-family:var(--disp);font-weight:600;font-size:15.5px;margin-bottom:4px;
+  display:flex;align-items:center;gap:10px;
+}
+.panel > h4 .ix{font-family:var(--mono);font-size:11px;color:var(--gold)}
+.panel .hint{color:var(--dim);font-size:12.5px;margin-bottom:16px}
+
+/* ---------- AHP matrix ---------- */
+.mtx-wrap{overflow-x:auto;margin:4px 0 6px;border-radius:var(--r-sm)}
+table.mtx{border-collapse:collapse;width:100%;font-size:13.5px;min-width:440px}
+table.mtx th,table.mtx td{border:1px solid var(--line);padding:0;text-align:center}
+table.mtx thead th{
+  background:var(--bg2);color:var(--mut);font-weight:500;font-size:12px;padding:9px 6px;
+  font-family:var(--mono);
+}
+table.mtx tbody th{
+  background:var(--bg2);color:var(--txt);font-weight:500;font-size:12.5px;padding:8px 11px;text-align:left;
+  white-space:nowrap;
+}
+table.mtx td{background:var(--bg)}
+table.mtx td.diag{background:var(--bg2);color:var(--dim);font-family:var(--mono)}
+table.mtx td.recip{background:var(--bgr);color:var(--dim);font-family:var(--mono);font-size:12px}
+table.mtx select{
+  width:100%;height:100%;min-height:38px;border:none;background:transparent;color:var(--txt);
+  font:inherit;font-size:13px;text-align:center;text-align-last:center;cursor:pointer;padding:6px 2px;
+}
+table.mtx select:focus{outline:2px solid var(--blue);outline-offset:-2px;background:var(--bg2)}
+table.mtx td.recip span{display:block;padding:8px 2px}
+
+.weights{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
+.wchip{
+  border:1px solid var(--line);border-radius:9px;padding:9px 13px;background:var(--bg2);min-width:96px;
+}
+.wchip .l{font-size:11px;color:var(--mut);font-family:var(--mono)}
+.wchip .v{font-family:var(--disp);font-weight:600;font-size:18px;color:var(--txt);margin-top:2px}
+.wchip .bar{height:4px;border-radius:3px;background:var(--line);margin-top:7px;overflow:hidden}
+.wchip .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--blue),var(--jade));border-radius:3px}
+
+.cr-row{display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-top:16px}
+.cr-stat{font-family:var(--mono);font-size:12.5px;color:var(--mut)}
+.cr-stat b{color:var(--txt)}
+.cr-badge{
+  display:inline-flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600;
+  padding:6px 13px;border-radius:20px;font-family:var(--mono);
+}
+.cr-badge .d{width:8px;height:8px;border-radius:50%}
+.cr-badge.ok{color:var(--jade);background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.3)}
+.cr-badge.ok .d{background:var(--jade)}
+.cr-badge.bad{color:var(--red);background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.3)}
+.cr-badge.bad .d{background:var(--red)}
+
+.alert{
+  border:1px solid rgba(239,68,68,.35);background:rgba(239,68,68,.08);border-radius:var(--r-sm);
+  padding:13px 15px;margin-top:14px;font-size:13px;color:#ffd9d9;display:none;
+}
+.alert.show{display:block}
+.alert b{color:#fff}
+
+/* ---------- Supplier sub-tabs ---------- */
+.subtabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
+.subtabs button{
+  font:inherit;font-size:12.5px;color:var(--mut);background:var(--bg2);border:1px solid var(--line);
+  padding:7px 13px;border-radius:8px;cursor:pointer;transition:.15s;display:flex;align-items:center;gap:7px;
+}
+.subtabs button:hover{color:var(--txt)}
+.subtabs button.active{color:#fff;background:var(--blue);border-color:var(--blue)}
+.subtabs button .mini{width:7px;height:7px;border-radius:50%;background:var(--dim)}
+.subtabs button.ok .mini{background:var(--jade)}
+.subtabs button.bad .mini{background:var(--red)}
+.smtx{display:none}.smtx.show{display:block}
+
+/* ---------- Final scores ---------- */
+.final{display:none}.final.show{display:block}
+table.scores{border-collapse:collapse;width:100%;font-size:13.5px;margin-top:6px}
+table.scores th,table.scores td{border:1px solid var(--line);padding:10px 12px;text-align:center}
+table.scores thead th{background:var(--bg2);color:var(--mut);font-family:var(--mono);font-size:11.5px;font-weight:500}
+table.scores tbody th{background:var(--bg2);text-align:left;font-weight:600}
+table.scores td{background:var(--bg);font-family:var(--mono);color:var(--mut)}
+table.scores td.tot{color:var(--txt);font-weight:600}
+table.scores tr.win td,table.scores tr.win th{background:rgba(34,197,94,.1)}
+table.scores tr.win td.tot{color:var(--jade)}
+.rank-line{margin-top:16px;font-size:14px;color:var(--mut)}
+.rank-line b{color:var(--jade);font-family:var(--disp);font-size:16px}
+
+/* ---------- buttons ---------- */
+.btn{
+  font:inherit;font-weight:600;font-size:13.5px;border-radius:9px;padding:11px 20px;cursor:pointer;
+  border:1px solid var(--blue);background:var(--blue);color:#fff;transition:.15s;display:inline-flex;align-items:center;gap:9px;
+}
+.btn:hover{background:var(--blue-d)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.ghost{background:transparent;color:var(--mut);border-color:var(--line2)}
+.btn.ghost:hover{color:var(--txt);border-color:var(--blue);background:var(--bg1)}
+.actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:8px}
+
+/* ---------- Phase 2 ---------- */
+.handoff{
+  display:flex;align-items:center;gap:13px;flex-wrap:wrap;
+  border:1px solid var(--line);border-left:3px solid var(--jade);border-radius:var(--r-sm);
+  background:var(--bg2);padding:13px 16px;margin-bottom:20px;font-size:13.5px;
+}
+.handoff .ic{font-family:var(--disp);font-weight:700;color:var(--jade)}
+.handoff .vs{font-family:var(--mono);color:var(--dim);font-size:12px}
+.handoff.warn{border-left-color:var(--gold)}
+.handoff.warn .ic{color:var(--gold)}
+.handoff b{color:var(--txt)}
+
+.shared-bar{
+  display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+  background:var(--bg2);border:1px solid var(--line);border-radius:var(--r-sm);
+  padding:12px 16px;margin-bottom:18px;
+}
+.shared-bar .lab{font-size:13px;color:var(--mut)}
+.shared-bar .lab b{color:var(--gold);font-family:var(--mono);font-size:11px;display:block;letter-spacing:1px;text-transform:uppercase}
+.shared-bar input{
+  width:130px;background:var(--bg);border:1px solid var(--line2);color:var(--txt);
+  font-family:var(--mono);font-size:14px;border-radius:7px;padding:8px 11px;
+}
+.shared-bar input:focus{outline:2px solid var(--blue);outline-offset:1px;border-color:var(--blue)}
+
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media(max-width:760px){.grid2{grid-template-columns:1fr}}
+.scard{border:1px solid var(--line);border-radius:var(--r-sm);background:var(--bg2);padding:16px 18px}
+.scard h5{font-family:var(--disp);font-weight:600;font-size:16px;display:flex;align-items:center;gap:9px;padding-bottom:10px;border-bottom:1px solid var(--line)}
+.scard h5 .tag{font-family:var(--mono);font-size:10px;color:#0b1220;background:var(--blue);border-radius:5px;padding:2px 7px}
+.scard:nth-child(2) h5 .tag{background:var(--jade)}
+.fgroup .gh{font-family:var(--mono);font-size:10px;letter-spacing:1.3px;text-transform:uppercase;color:var(--gold);margin:14px 0 7px}
+.field{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:7px}
+.field label{font-size:12.5px;color:var(--mut);flex:1}
+.field input{
+  width:108px;background:var(--bg);border:1px solid var(--line);color:var(--txt);
+  font-family:var(--mono);font-size:12.5px;border-radius:6px;padding:7px 9px;text-align:right;
+}
+.field input:focus{outline:2px solid var(--blue);outline-offset:-1px;border-color:var(--blue)}
+
+.formula{
+  font-family:var(--mono);font-size:12px;line-height:1.7;color:#a8c4e0;
+  background:#0b1220;border:1px solid #24344c;border-radius:var(--r-sm);
+  padding:15px 17px;margin-top:14px;white-space:pre-wrap;overflow-x:auto;
+}
+.formula .ttl{color:#f59e0b;font-weight:500}
+.formula .res{color:#34d399}
+.formula .hl{color:#f0f6ff}
+
+table.tradeoff{border-collapse:collapse;width:100%;font-size:13px;margin-top:6px}
+table.tradeoff th,table.tradeoff td{border:1px solid var(--line);padding:9px 13px;text-align:right}
+table.tradeoff thead th{background:var(--bg2);color:var(--mut);font-family:var(--mono);font-size:11.5px;font-weight:500;text-align:right}
+table.tradeoff thead th:first-child,table.tradeoff tbody th{text-align:left}
+table.tradeoff tbody th{background:var(--bg2);font-weight:500;color:var(--mut);font-size:12.5px}
+table.tradeoff td{background:var(--bg);font-family:var(--mono);color:var(--mut)}
+table.tradeoff td.best{color:var(--jade);background:rgba(34,197,94,.08)}
+table.tradeoff tr.total th{color:var(--txt);font-weight:600}
+table.tradeoff tr.total td{color:var(--txt);font-weight:600;font-size:14px}
+table.tradeoff tr.total td.best{color:var(--jade)}
+
+/* ---------- stub ---------- */
+.stub{
+  border:1px dashed var(--line2);border-radius:var(--r);padding:40px 26px;text-align:center;color:var(--dim);
+  background:repeating-linear-gradient(45deg,transparent,transparent 12px,rgba(255,255,255,.012) 12px,rgba(255,255,255,.012) 24px);
+}
+.stub h4{font-family:var(--disp);color:var(--mut);font-size:17px;margin-bottom:8px}
+.stub .pill{font-family:var(--mono);font-size:11px;color:var(--gold);border:1px solid var(--line);border-radius:20px;padding:4px 12px;display:inline-block;margin-top:14px}
+
+/* ---------- AHP guided builder + calculations ---------- */
+.viewtoggle{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;margin-bottom:16px}
+.viewtoggle button{font:inherit;font-size:12.5px;color:var(--mut);background:transparent;border:none;padding:8px 16px;cursor:pointer;transition:.15s}
+.viewtoggle button.active{background:var(--blue);color:#fff}
+.guided{display:flex;flex-direction:column;gap:18px;margin:2px 0 8px}
+.gpair{padding:2px 0}
+.gpair-top{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;margin-bottom:7px}
+.gpair-top .lab{font-size:13.5px;color:var(--txt);font-weight:600}
+.gpair-top .lab.r{text-align:right}
+.gread{font-family:var(--mono);font-size:11.5px;color:var(--gold);text-align:center;min-width:210px}
+.gslider{width:100%;-webkit-appearance:none;appearance:none;height:7px;border-radius:5px;background:linear-gradient(90deg,var(--blue) 0%,var(--line) 48%,var(--line) 52%,var(--jade) 100%);outline:none;cursor:pointer}
+.gslider::-webkit-slider-thumb{-webkit-appearance:none;width:19px;height:19px;border-radius:50%;background:var(--gold);border:2px solid #fff;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.4)}
+.gslider::-moz-range-thumb{width:19px;height:19px;border-radius:50%;background:var(--gold);border:2px solid #fff;cursor:pointer}
+.gslider:focus{outline:2px solid var(--blue);outline-offset:3px;border-radius:5px}
+.gscale{display:flex;justify-content:space-between;font-family:var(--mono);font-size:9.5px;color:var(--dim);margin-top:4px}
+.grow{display:grid;grid-template-columns:1fr minmax(220px,300px) 1fr;align-items:center;gap:14px}
+.grow .lab{font-size:13px;color:var(--txt);font-weight:500}
+.grow .lab.r{text-align:right}
+.grow select{background:var(--bg);border:1px solid var(--line2);color:var(--txt);font:inherit;font-size:12px;border-radius:8px;padding:9px 10px;text-align:center;text-align-last:center;cursor:pointer}
+.grow select:focus{outline:2px solid var(--blue);outline-offset:-1px;border-color:var(--blue)}
+@media(max-width:620px){.grow{grid-template-columns:1fr;gap:4px;text-align:center}.grow .lab.r{text-align:center}}
+
+.calc{margin-top:16px;border-top:1px solid var(--line);padding-top:16px;display:none}
+.calc.show{display:block}
+.calc-criterion{padding:18px 0;border-bottom:1px solid var(--line)}.calc-criterion:last-child{border-bottom:0}.calc-criterion h5{font-family:var(--disp);font-size:16px;color:var(--txt);margin:0 0 3px}.calc-criterion .criterion-note{font-family:var(--mono);font-size:10.5px;color:var(--gold);margin-bottom:12px;text-transform:uppercase;letter-spacing:.6px}
+.calc .step{margin-bottom:18px}
+.calc .steph{font-family:var(--mono);font-size:12px;color:var(--mut);margin-bottom:8px}
+.calc .steph b{color:var(--gold)}
+table.cmtx{border-collapse:collapse;font-size:12.5px;margin-top:4px}
+table.cmtx th,table.cmtx td{border:1px solid var(--line);padding:6px 12px;text-align:center;font-family:var(--mono)}
+table.cmtx thead th{background:var(--bg2);color:var(--mut);font-size:11px;font-weight:500}
+table.cmtx tbody th{background:var(--bg2);color:var(--txt)}
+table.cmtx td{background:var(--bg);color:var(--mut)}
+table.cmtx tr.sum td{background:var(--bgr);color:var(--gold);font-weight:600}
+table.cmtx tr.sum td:first-child{color:var(--gold)}
+table.cmtx td.wt{color:var(--jade);font-weight:600}
+.calc .cline{font-family:var(--mono);font-size:12px;color:var(--mut);margin:3px 0;white-space:pre-wrap;line-height:1.5}
+.calc .cline .g{color:var(--jade)}
+.calc .cline .t{color:var(--txt)}
+.calc .cline .r{color:var(--red)}
+
+/* ---------- exec summary banner ---------- */
+.execbar{position:sticky;top:62px;z-index:30;background:var(--bg2);border-bottom:1px solid var(--line);display:none;padding:9px 0}
+.execbar.show{display:block}
+.execbar .wrap{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.execbar .lead{font-family:var(--mono);font-size:10.5px;letter-spacing:1px;text-transform:uppercase;color:var(--gold);margin-right:4px}
+.echip{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-family:var(--mono);color:var(--mut);background:var(--bg);border:1px solid var(--line);border-radius:20px;padding:5px 12px}
+.echip b{color:var(--txt)}
+.echip .dot{width:7px;height:7px;border-radius:50%;background:var(--jade)}
+
+/* ---------- info tooltip ---------- */
+.tip{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;border:1px solid var(--line2);color:var(--mut);font-size:9.5px;font-family:var(--mono);cursor:help;margin-left:5px;vertical-align:middle;position:relative}
+.tip:hover{color:var(--txt);border-color:var(--blue)}
+.tip::after{content:attr(data-tip);position:absolute;bottom:150%;left:50%;transform:translateX(-50%);background:#0b1220;color:#e8f0fc;border:1px solid var(--line2);border-radius:7px;padding:8px 11px;font-family:var(--body);font-size:11.5px;font-weight:400;line-height:1.4;width:230px;text-align:left;opacity:0;pointer-events:none;transition:.15s;z-index:60}
+.tip:hover::after{opacity:1}
+
+/* ---------- radar ---------- */
+.radarbox{border:1px solid var(--line);border-radius:var(--r-sm);background:var(--bg2);padding:10px;margin-top:16px}
+.radarbox svg{width:100%;height:auto;display:block}
+.radarleg{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin-top:4px;font-family:var(--mono);font-size:11px;color:var(--mut)}
+.radarleg span{display:inline-flex;align-items:center;gap:6px}
+.radarleg i{width:11px;height:3px;border-radius:2px;display:inline-block}
+
+/* ---------- phase jump nav ---------- */
+.phasenav{display:flex;gap:8px;margin:0 0 26px;flex-wrap:wrap}
+.phasenav a{font-family:var(--mono);font-size:12px;color:var(--mut);border:1px solid var(--line);border-radius:8px;padding:7px 13px;cursor:pointer;transition:.15s}
+.phasenav a:hover{color:var(--txt);border-color:var(--blue);background:var(--bg1)}
+
+/* ---------- distance matrix editor ---------- */
+.dmtx{border-collapse:collapse;min-width:480px}
+.dmtx th{background:var(--bg2);color:var(--mut);font-family:var(--mono);font-size:12px;padding:7px 9px;border:1px solid var(--line)}
+.dmtx td{border:1px solid var(--line);padding:0}
+.dmtx input{width:64px;background:var(--bg);border:none;color:var(--txt);font-family:var(--mono);font-size:12.5px;text-align:center;padding:9px 4px}
+.dmtx input:focus{outline:2px solid var(--blue);outline-offset:-2px;background:var(--bg2)}
+.dmtx td.dg{background:var(--bg2);color:var(--dim);text-align:center;font-family:var(--mono);font-size:13px}
+
+/* ---------- route graphic ---------- */
+.routebox{border:1px solid var(--line);border-radius:var(--r-sm);background:radial-gradient(circle at 50% 42%,#13213c,#0a1018);padding:8px;margin-top:16px}
+.routebox svg{width:100%;height:auto;display:block}
+.tourseq{font-family:var(--disp);font-weight:700;font-size:22px;color:var(--txt);letter-spacing:1.5px;margin:6px 0 2px}
+.tourseq .arr{color:var(--blue);margin:0 5px;font-weight:500}
+.bigstat{display:flex;gap:30px;flex-wrap:wrap;margin:14px 0}
+.bigstat .s .v{font-family:var(--disp);font-weight:700;font-size:27px;color:var(--jade);line-height:1}
+.bigstat .s .l{font-family:var(--mono);font-size:11px;color:var(--mut);margin-top:5px}
+.verify{display:inline-flex;align-items:center;gap:9px;font-family:var(--mono);font-size:12.5px;font-weight:600;padding:7px 14px;border-radius:20px;color:var(--jade);background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.3)}
+.verify .d{width:8px;height:8px;border-radius:50%;background:var(--jade);box-shadow:0 0 7px var(--jade)}
+@keyframes edgeIn{from{opacity:0}to{opacity:1}}
+.tour-edge{opacity:0;animation:edgeIn .5s ease forwards}
+
+/* ---------- Phase 2 cost bars ---------- */
+.barwrap{margin-top:18px}
+.barrow{display:flex;align-items:center;gap:11px;margin-bottom:11px}
+.barrow .nm{width:104px;font-size:13px;color:var(--txt);font-family:var(--disp);font-weight:600;flex:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.barrow .track{flex:1;height:28px;background:var(--bg2);border-radius:6px;overflow:hidden;display:flex;border:1px solid var(--line)}
+.barrow .seg{height:100%;min-width:1px;display:flex;align-items:center;justify-content:center;font-size:10.5px;color:#fff;font-weight:600;font-family:var(--mono);overflow:hidden;white-space:nowrap;text-shadow:0 1px 1px rgba(0,0,0,.35);transition:width .7s ease}
+.barrow .bartot{width:118px;text-align:right;font-family:var(--mono);font-size:13px;font-weight:600;color:var(--txt);flex:none}
+.barlegend{display:flex;gap:18px;flex-wrap:wrap;margin-top:6px;margin-left:115px;font-size:11.5px;color:var(--mut);font-family:var(--mono)}
+.barlegend span{display:inline-flex;align-items:center;gap:6px}
+.barlegend i{width:11px;height:11px;border-radius:3px;display:inline-block}
+
+/* ---------- Option 2 · params + roadmap + branch ---------- */
+.params{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:13px;margin-top:8px}
+.pcell{display:flex;flex-direction:column;gap:5px;min-width:0}
+.pcell label{font-size:11px;color:var(--mut);font-family:var(--mono);letter-spacing:.3px;line-height:1.35;min-height:30px;display:flex;align-items:flex-end}
+.pcell input{width:100%;background:var(--bg);border:1px solid var(--line);color:var(--txt);font-family:var(--mono);font-size:13px;border-radius:7px;padding:8px 10px}
+.pcell input:focus{outline:2px solid var(--blue);outline-offset:-1px;border-color:var(--blue)}
+.subhead{font-family:var(--mono);font-size:10.5px;letter-spacing:1.3px;text-transform:uppercase;color:var(--gold);margin:18px 0 4px}
+.demandrow{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:9px}
+@media(max-width:640px){.demandrow{grid-template-columns:repeat(3,minmax(0,1fr))}}
+
+table.roadmap{border-collapse:collapse;width:100%;font-size:12.5px;margin-top:6px;min-width:560px}
+table.roadmap th,table.roadmap td{border:1px solid var(--line);padding:8px 10px;text-align:center;font-family:var(--mono)}
+table.roadmap thead th{background:var(--bg2);color:var(--mut);font-size:11px;font-weight:500}
+table.roadmap tbody th{background:var(--bg2);color:var(--txt);font-weight:500}
+table.roadmap td{background:var(--bg);color:var(--mut)}
+table.roadmap tr.ot td{background:rgba(245,158,11,.10)}
+table.roadmap td.otv{color:var(--gold);font-weight:600}
+
+.aggchart{border:1px solid var(--line);border-radius:var(--r-sm);background:var(--bg2);padding:14px;margin-top:14px}
+.aggchart svg{width:100%;height:auto;display:block}
+
+.branch{display:flex;gap:20px;flex-wrap:wrap;align-items:center;border:1px solid var(--line);border-left:4px solid var(--gold);border-radius:var(--r-sm);background:var(--bg2);padding:18px 22px}
+.branch.a{border-left-color:var(--jade)}
+.branch .big{font-family:var(--disp);font-weight:700;font-size:40px;color:var(--gold);line-height:1}
+.branch.a .big{color:var(--jade)}
+.branch .txt{font-size:13.5px;color:var(--mut);max-width:560px}
+.branch .txt b{color:var(--txt)}
+.branch .cfg{font-family:var(--mono);font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--gold)}
+.branch.a .cfg{color:var(--jade)}
+
+/* ---------- Option 2 · facility layout ---------- */
+.lmtx{border-collapse:collapse;margin-top:8px}
+.lmtx caption{caption-side:top;text-align:left;font-family:var(--mono);font-size:11px;color:var(--mut);padding-bottom:6px}
+.lmtx th{background:var(--bg2);color:var(--mut);font-family:var(--mono);font-size:11px;padding:6px 10px;border:1px solid var(--line);font-weight:500}
+.lmtx td{border:1px solid var(--line);padding:0}
+.lmtx td.dg{background:var(--bg2);color:var(--dim);text-align:center;font-family:var(--mono)}
+.lmtx input{width:66px;background:var(--bg);border:none;color:var(--txt);font-family:var(--mono);font-size:12.5px;text-align:center;padding:8px 4px}
+.lmtx input:focus{outline:2px solid var(--blue);outline-offset:-2px;background:var(--bg2)}
+.layoutbox{border:1px solid var(--line);border-radius:var(--r-sm);background:radial-gradient(circle at 50% 45%,#13213c,#0a1018);padding:10px;margin-top:16px}
+.layoutbox svg{width:100%;height:auto;display:block}
+.coordchip{display:inline-flex;gap:9px;align-items:center;font-family:var(--mono);font-size:13.5px;background:var(--bg2);border:1px solid var(--line);border-radius:8px;padding:9px 14px;margin:5px 9px 5px 0}
+.coordchip .k{color:var(--mut)}.coordchip b{color:var(--gold)}
+
+/* ---------- theme toggle + header actions ---------- */
+.hbtn{
+  font:inherit;font-size:11.5px;color:var(--mut);background:transparent;border:1px solid var(--line);
+  padding:6px 10px;border-radius:8px;cursor:pointer;transition:.15s;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;
+}
+.hbtn:hover{color:var(--txt);border-color:var(--blue);background:var(--bg1)}
+.hbtn.accent{border-color:var(--blue);color:#fff;background:var(--blue)}
+.hbtn.accent:hover{background:var(--blue-d)}
+
+/* light-mode readability overrides */
+body.light .alert{color:#b91c1c}
+body.light .cr-badge.ok,body.light .verify{color:#15803d}
+body.light .cr-badge.bad{color:#b91c1c}
+body.light .wchip .v,body.light table.scores tbody th{color:var(--txt)}
+body.light .opt::before,body.light .wchip .bar i{filter:saturate(1.1)}
+
+/* ---------- PDF / print report ---------- */
+.report{display:none}
+@media print{
+  html,body{background:#fff!important}
+  body>*{display:none!important}
+  #report{display:block!important;position:static!important;width:100%;color:#111;font-family:'Inter',sans-serif}
+  #report *{visibility:visible!important}
+  @page{margin:14mm}
+  .r-page{break-after:auto;page-break-after:auto}
+  .r-sec{break-inside:avoid;page-break-inside:avoid}
+  .report .calc-criterion{break-inside:avoid;page-break-inside:avoid}.report .calc-criterion h5{color:#0e1f33}.report .calc-criterion .criterion-note{color:#8a5a00}.report .cmtx th,.report .cmtx td{border-color:#cbd5e1;color:#1e293b;background:#fff}.report .cmtx thead th,.report .cmtx tbody th{background:#eef2f8;color:#1e293b}.report .cmtx tr.sum td{background:#fff7df;color:#7a5a00}.report .calc .cline,.report .calc .steph{color:#334155}.report .calc .cline .g{color:#166534}.report .calc .cline .t{color:#0f172a}
+}
+.report{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+
+/* ---------- 2026 decision-workspace refresh ---------- */
+:root{--bg:#0a1020;--bg1:#101a2f;--bg2:#15223a;--bgr:#0d1729;--line:#263955;--line2:#3b5275;--blue:#4f7cff;--blue-d:#365fe5;--jade:#39d6a3;--gold:#f5ba4c;--red:#ff6e7e;--txt:#f6f8ff;--mut:#aabbd4;--dim:#7185a4;--r:18px;--r-sm:12px}
+body{background:radial-gradient(circle at 7% 0%,#1d3159 0,transparent 29rem),radial-gradient(circle at 94% 12%,#143d49 0,transparent 24rem),var(--bg);font-size:14px}
+body.light{--bg:#f4f7fc;--bg1:#fff;--bg2:#edf2f9;--bgr:#e7edf6;--line:#c7d5e8;--line2:#9fb4d2;--blue:#244ee4;--blue-d:#193bbd;--jade:#08795a;--gold:#986000;--red:#a9273d;--txt:#091426;--mut:#263a55;--dim:#4e6380;background:radial-gradient(circle at 0 0%,#e8f0ff 0,transparent 30rem),#f4f7fc}
+.wrap{max-width:1280px;padding-left:28px;padding-right:28px}
+header.top{background:rgba(10,16,32,.82);border-color:rgba(125,152,197,.2);backdrop-filter:blur(18px)}
+body.light header.top{background:rgba(250,252,255,.84)}
+.top .wrap{min-height:72px;gap:18px}.brand{gap:10px}.brand .mark{width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,#789bff,#4f7cff 48%,#39d6a3);box-shadow:0 8px 20px rgba(79,124,255,.28);font-size:17px}.brand b{font-size:15px}.brand span{font-family:var(--mono);font-size:10px;letter-spacing:.3px}
+.top nav{padding:4px;border:1px solid var(--line);border-radius:12px;background:rgba(255,255,255,.025);gap:2px}.top nav button{font-size:12px;padding:7px 11px;border-radius:8px}.top nav button.active{background:linear-gradient(135deg,var(--blue),#668cff);box-shadow:0 5px 12px rgba(79,124,255,.26)}
+.hactions{gap:6px}.solver-chip{background:rgba(57,214,163,.06);border-color:rgba(57,214,163,.2);color:var(--mut)}.hbtn{border-radius:9px;padding:7px 9px;background:rgba(255,255,255,.018)}.hbtn.accent{background:linear-gradient(135deg,var(--blue),#668cff);border-color:transparent;box-shadow:0 7px 16px rgba(79,124,255,.22)}
+main{padding-top:42px;background-image:linear-gradient(rgba(125,152,197,.028) 1px,transparent 1px),linear-gradient(90deg,rgba(125,152,197,.028) 1px,transparent 1px);background-size:34px 34px}
+.hero{position:relative;isolation:isolate;overflow:hidden;border:1px solid rgba(123,152,204,.28);border-radius:26px;padding:54px;min-height:350px;margin-bottom:26px;background:linear-gradient(118deg,rgba(27,47,86,.96),rgba(16,27,47,.94) 58%,rgba(11,57,69,.82));box-shadow:0 24px 60px rgba(1,8,20,.24)}
+.hero::before{content:"";position:absolute;z-index:-1;width:430px;height:430px;right:-90px;top:-142px;border-radius:50%;background:radial-gradient(circle,rgba(79,124,255,.45),rgba(79,124,255,0) 68%)}.hero::after{content:"";position:absolute;z-index:-1;right:7%;bottom:-62px;width:260px;height:180px;border:1px solid rgba(144,177,255,.24);border-radius:28px;transform:rotate(-14deg);box-shadow:0 0 0 22px rgba(57,214,163,.045),0 0 0 44px rgba(79,124,255,.035)}
+.eyebrow{color:#ffcf70;font-size:10px;letter-spacing:2.2px}.hero h1{max-width:850px;font-size:clamp(36px,5vw,62px);letter-spacing:-2.4px}.hero h1 em{background:linear-gradient(90deg,#8cadff,#62ebbd);background-clip:text;-webkit-background-clip:text;color:transparent}.hero p{max-width:650px;line-height:1.7;font-size:15px}.scenario{gap:8px}.scenario .tag{border-radius:999px;background:rgba(255,255,255,.055);border-color:rgba(187,210,255,.2);padding:6px 10px;color:#c4d1e6}.scenario .tag b{color:#fff}
+.hero-bottom{display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap;margin-top:28px}.hero-stats{display:flex;gap:24px;flex-wrap:wrap}.hero-stat{border-left:1px solid rgba(190,213,255,.28);padding-left:12px}.hero-stat b{display:block;font-family:var(--disp);font-size:19px;line-height:1.05}.hero-stat span{font-family:var(--mono);font-size:10px;color:#afbed4;text-transform:uppercase;letter-spacing:.7px}.hero-actions{display:flex;gap:9px;flex-wrap:wrap}.hero-action{font:inherit;font-size:12px;font-weight:600;border-radius:10px;padding:10px 13px;cursor:pointer;color:white;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.07)}.hero-action.primary{background:#fff;color:#16233c;border-color:#fff}
+.decision-center{border-radius:18px;border-color:rgba(123,152,204,.3);background:linear-gradient(120deg,rgba(18,31,55,.96),rgba(13,23,40,.96));padding:24px 26px;box-shadow:0 14px 32px rgba(1,8,20,.15)}.dc-top h3{font-size:20px}.preset{border-radius:9px;padding:8px 12px;background:rgba(255,255,255,.035);border-color:rgba(131,158,202,.25)}.preset:hover{background:var(--blue);box-shadow:0 6px 15px rgba(79,124,255,.2)}.progress-grid{gap:10px}.progress-card{min-height:72px;border-radius:12px;background:rgba(255,255,255,.025);border-color:rgba(131,158,202,.18);transition:transform .15s,border-color .15s}.progress-card:hover{transform:translateY(-2px);border-color:rgba(117,151,255,.6)}
+.menu{gap:16px}.opt{border-radius:18px;padding:29px 29px 25px;background:linear-gradient(145deg,rgba(21,34,58,.98),rgba(13,24,43,.98));border-color:rgba(123,152,204,.25);box-shadow:0 12px 28px rgba(1,8,20,.12)}.opt::before{width:5px;background:linear-gradient(var(--blue),var(--jade))}.opt:hover{box-shadow:0 20px 36px rgba(1,8,20,.24);border-color:rgba(104,143,255,.75)}.opt h3{font-size:24px;letter-spacing:-.6px}.opt .num{color:#91aafa;letter-spacing:.8px}.opt ol{gap:11px}.opt ol li .ph{border-color:rgba(79,124,255,.42);background:rgba(79,124,255,.08);color:#91aafa}.opt .go{padding-top:6px;color:#86a5ff}
+.crumb{font-size:11px}.phasenav{position:sticky;top:78px;z-index:20;background:rgba(10,16,32,.82);padding:9px;border:1px solid rgba(123,152,204,.2);border-radius:13px;backdrop-filter:blur(16px);margin-bottom:32px}.phasenav a{border-radius:8px;border-color:transparent;padding:7px 10px}.phasenav a:hover{background:rgba(79,124,255,.16);border-color:rgba(79,124,255,.28)}
+.phase-head{padding:0 0 20px;margin-bottom:20px;gap:12px}.phase-head .pn{border-radius:7px;background:linear-gradient(135deg,#668cff,var(--blue));box-shadow:0 5px 12px rgba(79,124,255,.25)}.phase-head h2{font-size:28px;letter-spacing:-.7px}.panel{border-radius:18px;padding:25px;background:linear-gradient(145deg,rgba(19,32,55,.96),rgba(13,24,42,.96));border-color:rgba(123,152,204,.24);box-shadow:0 10px 22px rgba(1,8,20,.12)}.panel>h4{font-size:16px}.panel>.hint{line-height:1.55}.btn{border-radius:10px;background:linear-gradient(135deg,var(--blue),#668cff);box-shadow:0 7px 16px rgba(79,124,255,.2)}.btn.ghost{background:rgba(255,255,255,.03);border-color:rgba(123,152,204,.3)}
+.shared-bar,.handoff,.sens,.radarbox,.aggchart{border-radius:14px}.field input,.pcell input{border-radius:9px;background:rgba(5,12,25,.48)}.formula{border-radius:12px;background:#091222;box-shadow:inset 0 1px rgba(255,255,255,.03)}
+#compareBtn:not(:disabled){background:linear-gradient(135deg,#f59e0b,#f97316);border-color:#f59e0b;color:#17100a;box-shadow:0 7px 16px rgba(245,158,11,.23)}#compareBtn:not(:disabled):hover{filter:brightness(1.08)}#compareBtn:disabled{opacity:.5;cursor:not-allowed}
+.strategy-chart{margin-top:18px;padding:12px;border:1px solid var(--line);border-radius:14px;background:linear-gradient(145deg,rgba(14,27,49,.94),rgba(11,20,37,.94))}.strategy-chart svg{display:block;width:100%;height:auto}
+.svg-tooltip{position:fixed;z-index:1000;max-width:260px;padding:7px 9px;border:1px solid rgba(123,152,204,.55);border-radius:8px;background:#0a1325;color:#eef5ff;box-shadow:0 8px 20px rgba(0,0,0,.25);font:11px/1.35 var(--mono);pointer-events:none;opacity:0;transform:translate(10px,10px);transition:opacity .1s}.svg-tooltip.show{opacity:1}
+.route-mode{display:inline-flex;padding:4px;gap:3px;border:1px solid var(--line);border-radius:11px;background:var(--bg2);margin:0 0 16px}.route-mode button{font:inherit;font-size:12px;color:var(--mut);background:transparent;border:0;border-radius:7px;padding:8px 11px;cursor:pointer}.route-mode button.active{background:var(--blue);color:#fff}.ontario-controls{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:12px 0}.city-field{display:flex;flex-direction:column;gap:5px}.city-field label{font:500 10px var(--mono);letter-spacing:.5px;text-transform:uppercase;color:var(--mut)}.city-field select{width:100%;min-height:38px;color:var(--txt);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font:inherit;font-size:12px}.city-field select:focus{outline:2px solid var(--blue);outline-offset:-1px;border-color:var(--blue)}.ontario-map{height:390px;border:1px solid var(--line);border-radius:13px;overflow:hidden;margin-top:14px}.map-note{font-size:12px;color:var(--dim);margin-top:9px}.leaflet-container{font-family:var(--body)}
+.compare-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-top:18px}.compare-tabs button{font:inherit;font-size:12px;color:var(--mut);background:var(--bg2);border:1px solid var(--line);border-radius:9px;padding:8px 13px;cursor:pointer}.compare-tabs button.active{color:#fff;background:var(--blue);border-color:var(--blue)}.chart-title{font-family:var(--mono);font-size:11px;color:var(--mut);margin:2px 3px 9px;text-transform:uppercase;letter-spacing:.5px}
+table.mtx,table.scores,table.tradeoff,table.roadmap{border-radius:12px;overflow:hidden}.routebox,.layoutbox{border-radius:14px}.execbar{top:72px;background:rgba(15,27,48,.93);backdrop-filter:blur(14px)}footer{border-color:rgba(123,152,204,.2);padding:28px 0}
+body.light .hero{background:linear-gradient(120deg,#d7e5ff,#f4f7ff 58%,#ddf7ed);border-color:#b9cce9;box-shadow:0 20px 45px rgba(49,78,130,.12)}body.light .hero h1{color:#0c1b34}body.light .hero p{color:#273c59}body.light .hero .eyebrow{color:#815000}body.light .hero-stat span{color:#354c6a}body.light .hero-action.primary{background:#244ee4;color:#fff;border-color:#244ee4}body.light .hero-action:not(.primary){color:#152946;border-color:#aabddd;background:rgba(255,255,255,.6)}body.light .scenario .tag{background:#fff;color:#314762;border-color:#c8d7ea}body.light .scenario .tag b{color:#112443}body.light .decision-center,body.light .panel,body.light .opt{background:linear-gradient(145deg,#fff,#f5f8fd);box-shadow:0 10px 24px rgba(49,78,130,.08)}body.light .phasenav{background:rgba(250,252,255,.92)}body.light .field input,body.light .pcell input{background:#fff;color:#111f37;border-color:#afc1dc}body.light .panel>.hint,body.light .opt .sub,body.light .dc-top p,body.light .field label,body.light .pcell label,body.light .branch .txt,body.light .sens .sub,body.light .sens .be{color:#2d425e}body.light .phase-head p,body.light .crumb,body.light .progress-card .v,body.light .progress-card .k{color:#344a67}body.light .top nav button,body.light .hbtn{color:#263b57}body.light .top nav button:hover,body.light .hbtn:hover{color:#0b1930;background:#e7eefb}body.light .progress-card{background:#f9fbff;border-color:#c7d5e8}body.light table.mtx td,body.light table.tradeoff td,body.light table.roadmap td,body.light table.cmtx td{color:#263a55;background:#fff}body.light table.mtx thead th,body.light table.mtx tbody th,body.light table.tradeoff thead th,body.light table.tradeoff tbody th,body.light table.roadmap thead th,body.light table.roadmap tbody th,body.light table.cmtx thead th,body.light table.cmtx tbody th{color:#1e3552;background:#eaf0f8}body.light .gread,body.light .subhead,body.light .progress-card.done .v{color:#725000}body.light .formula{color:#d6e5ff}body.light .formula .ttl{color:#ffcb67}body.light .formula .res{color:#58e3b2}
+@media(max-width:900px){.top .wrap{gap:10px}.hactions{margin-left:0}.hero{padding:36px}.hero::after{display:none}.phasenav{top:130px}}@media(max-width:620px){.wrap{padding-left:16px;padding-right:16px}.top .wrap{min-height:60px}.brand span,.solver-chip{display:none}.top nav{order:4;width:100%;justify-content:space-between}.top nav button{flex:1;padding:7px 4px;font-size:11px}.hactions{width:100%;justify-content:flex-end}.hactions .hbtn{font-size:0;padding:7px}.hactions .hbtn::first-letter{font-size:13px}.hero{padding:30px 23px;border-radius:20px}.hero h1{font-size:36px;letter-spacing:-1.5px}.hero-stats{gap:14px}.hero-action{padding:9px 10px}.decision-center{padding:20px}.panel{padding:19px}.phase-head h2{font-size:23px}.phasenav{top:122px;overflow-x:auto;flex-wrap:nowrap}.phasenav a{white-space:nowrap}.progress-grid{grid-template-columns:1fr}.execbar{top:120px}}
+
+/* ---------- data-workspace polish ---------- */
+.crumb{display:inline-flex;align-items:center;gap:7px;background:rgba(255,255,255,.035);border:1px solid rgba(123,152,204,.18);border-radius:999px;padding:5px 10px;margin-bottom:14px}.crumb a{font-weight:600}
+.phase-head{position:relative;padding:8px 0 22px 18px;border-bottom-color:rgba(123,152,204,.24)}.phase-head::before{content:"";position:absolute;left:0;top:8px;bottom:22px;width:3px;border-radius:4px;background:linear-gradient(var(--blue),var(--jade))}.phase-head p{max-width:900px;line-height:1.65}
+.panel{transition:border-color .18s ease,box-shadow .18s ease}.panel:hover{border-color:rgba(117,151,255,.4);box-shadow:0 16px 30px rgba(1,8,20,.16)}.panel>h4{padding-bottom:12px;border-bottom:1px solid rgba(123,152,204,.15);margin-bottom:9px}.panel>h4 .ix{display:inline-flex;align-items:center;justify-content:center;min-width:27px;height:20px;padding:0 6px;border-radius:6px;background:rgba(245,186,76,.11);border:1px solid rgba(245,186,76,.2)}
+.actions{display:flex;align-items:center;gap:9px;flex-wrap:wrap}.btn{font-weight:600;letter-spacing:.05px;min-height:38px;padding:9px 14px}.btn:focus-visible,.hbtn:focus-visible,.preset:focus-visible,.compare-tabs button:focus-visible{outline:3px solid rgba(79,124,255,.35);outline-offset:2px}.btn.ghost{color:var(--txt)}
+.params,.demandrow{padding:12px;border:1px solid rgba(123,152,204,.16);border-radius:12px;background:rgba(255,255,255,.018)}.pcell input,.field input{transition:border-color .15s ease,box-shadow .15s ease}.pcell input:hover,.field input:hover{border-color:rgba(117,151,255,.65)}.pcell label{font-weight:500}.subhead{margin-top:22px}
+table.tradeoff,table.roadmap,table.mtx,table.scores{box-shadow:0 1px 0 rgba(255,255,255,.03)}table.tradeoff tbody tr,table.roadmap tbody tr,table.mtx tbody tr{transition:background .12s ease}table.tradeoff tbody tr:hover td,table.tradeoff tbody tr:hover th,table.roadmap tbody tr:hover td,table.roadmap tbody tr:hover th{background:rgba(79,124,255,.075)}table.tradeoff tr.total td,table.tradeoff tr.total th{box-shadow:inset 3px 0 0 var(--gold)}
+.bigstat{gap:0;border:1px solid rgba(123,152,204,.18);border-radius:12px;overflow:hidden;background:rgba(255,255,255,.018)}.bigstat .s{min-width:150px;padding:15px 20px;border-right:1px solid rgba(123,152,204,.18)}.bigstat .s:last-child{border-right:0}.bigstat .s .v{font-size:25px}.bigstat .s .l{font-size:10px;text-transform:uppercase;letter-spacing:.6px}
+.strategy-chart,.aggchart,.routebox,.layoutbox{box-shadow:inset 0 1px rgba(255,255,255,.04),0 8px 20px rgba(1,8,20,.12)}.compare-tabs{padding:5px;border:1px solid rgba(123,152,204,.2);border-radius:12px;background:rgba(255,255,255,.02);width:max-content;max-width:100%}.compare-tabs button{border-color:transparent}.compare-tabs button:not(.active):hover{background:rgba(79,124,255,.12);color:var(--txt)}
+.handoff{border-radius:13px}.alert{border-radius:11px}.weights{gap:8px}.wchip{border-radius:10px;transition:transform .15s}.wchip:hover{transform:translateY(-2px)}
+body.light .crumb{background:#fff;border-color:#cbd9eb}body.light .panel:hover{border-color:#9eb7e2}body.light .params,body.light .demandrow{background:#f7faff;border-color:#d6e1f0}body.light table.tradeoff tbody tr:hover td,body.light table.tradeoff tbody tr:hover th,body.light table.roadmap tbody tr:hover td,body.light table.roadmap tbody tr:hover th{background:#edf4ff}
+@media(max-width:620px){.phase-head{padding-left:13px}.bigstat .s{width:50%;min-width:0;padding:13px}.bigstat .s:nth-child(2){border-right:0}.params,.demandrow{padding:9px}.actions .btn{width:100%;justify-content:center}.compare-tabs{width:100%}.compare-tabs button{flex:1}.crumb{font-size:10px}}
+@media(max-width:720px){.ontario-controls{grid-template-columns:1fr 1fr}.ontario-map{height:300px}}
+.r-cover{border-bottom:3px solid #2563eb;padding-bottom:16px;margin-bottom:24px}
+.r-cover .r-ey{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:2px;color:#d97706;text-transform:uppercase}
+.r-cover h1{font-family:'Space Grotesk',sans-serif;font-size:30px;color:#0e1f33;margin:8px 0 6px}
+.r-cover .r-meta{font-size:12px;color:#3c5573;line-height:1.7}
+.r-sec{margin:0 0 26px}
+.r-sec h2{font-family:'Space Grotesk',sans-serif;font-size:19px;color:#0e1f33;border-left:4px solid #2563eb;padding-left:11px;margin-bottom:6px}
+.r-sec .r-note{font-size:12.5px;color:#3c5573;margin:6px 0 12px}
+.r-table{border-collapse:collapse;width:100%;font-size:12px;margin:8px 0}
+.r-table th,.r-table td{border:1px solid #cbd5e1;padding:7px 10px;text-align:right}
+.r-table th:first-child,.r-table td:first-child{text-align:left}
+.r-table thead th{background:#eef2f8;color:#0e1f33;font-family:'JetBrains Mono',monospace;font-size:11px}
+.r-table tbody th{background:#f6f8fc;font-weight:600;color:#334155;text-align:left}
+.r-table tr.r-sub th{background:#0e1f33;color:#fff;font-family:'JetBrains Mono',monospace;letter-spacing:1px;font-size:10.5px;text-transform:uppercase}
+.r-table tr.r-tot td,.r-table tr.r-tot th{background:#dcfce7;font-weight:700;color:#14532d;font-size:13px}
+.r-table td.r-best{background:#ecfdf5;color:#15803d;font-weight:600}
+.r-pre{font-family:'JetBrains Mono',monospace;font-size:10.5px;line-height:1.6;background:#f6f8fc;border:1px solid #cbd5e1;border-radius:6px;padding:12px;white-space:pre-wrap;color:#1e293b}
+.r-rec{background:#ecfdf5;border:1px solid #86efac;border-radius:7px;padding:11px 14px;font-size:13px;color:#14532d;margin-top:10px}
+.r-rec b{color:#15803d}
+.r-route{border:1px solid #cbd5e1;border-radius:8px;padding:8px;background:#fff;max-width:480px;margin:10px 0}
+
+/* ---------- footer ---------- */
+footer{border-top:1px solid var(--line);padding:22px 0;color:var(--dim);font-size:11.5px;font-family:var(--mono);text-align:center}
+footer b{color:var(--mut);font-weight:500}
+
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto}}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <div class="brand" onclick="goHome()">
+      <div class="mark">G</div>
+      <div><b>Global Logistics DSS</b><span> · ENGG*6291</span></div>
+    </div>
+    <nav id="nav">
+      <button data-view="home" class="active" onclick="show('home',this)">Home</button>
+      <button data-view="opt1" onclick="show('opt1',this)">Option 1 · Sourcing</button>
+      <button data-view="opt2" onclick="show('opt2',this)">Option 2 · Factory</button>
+    </nav>
+    <div class="hactions">
+      <div class="solver-chip" id="solverChip" title="In-browser optimisation engine (Pyodide + SciPy/HiGHS)">
+        <span class="dot"></span><span id="solverTxt" role="status" aria-live="polite">solver idle</span>
+      </div>
+      <button class="hbtn" id="themeBtn" onclick="toggleTheme()" title="Toggle light / dark">🌙 Dark</button>
+      <button class="hbtn" onclick="saveScenario()" title="Download all inputs as a JSON scenario">⤒ Save</button>
+      <button class="hbtn" onclick="document.getElementById('loadFile').click()" title="Load a saved scenario">⤓ Load</button>
+      <input type="file" id="loadFile" accept="application/json" style="display:none" onchange="loadScenario(event)">
+      <button class="hbtn" onclick="exportCSV()" title="Export results to CSV">⤓ CSV</button>
+      <button class="hbtn" onclick="resetAll()" title="Reset everything to defaults">↺ Reset</button>
+      <button class="hbtn accent" onclick="exportPDF()" title="Compile completed results into a PDF">⤓ PDF</button>
+    </div>
+  </div>
+</header>
+
+<div class="execbar" id="execbar"><div class="wrap"><span class="lead">Live summary</span><span id="execChips"></span></div></div>
+
+<main>
+<div class="wrap">
+
+<!-- ============ HOME ============ -->
+<section class="view show" id="view-home">
+  <div class="hero">
+    <div class="eyebrow">Mini Project 2 · Corporate Turnaround Simulator</div>
+    <h1>A decision support system for <em>sourcing, routing &amp;<br>production</em> under global volatility.</h1>
+    <p>One integrated toolset for a manufacturer navigating shifting logistics, unreliable suppliers, and internal capacity limits. Pick an executive track — every phase prints its full mathematical model, then solves it.</p>
+    <div class="scenario">
+      <div class="tag"><b>AHP</b> supplier selection</div>
+      <div class="tag"><b>Risk</b> &amp; carbon monetisation</div>
+      <div class="tag"><b>TSP</b> last-mile routing</div>
+      <div class="tag"><b>LP</b> aggregate planning</div>
+      <div class="tag"><b>Non-linear</b> facility layout</div>
+    </div>
+    <div class="hero-bottom">
+      <div class="hero-stats" aria-label="Application capabilities">
+        <div class="hero-stat"><b>5</b><span>decision engines</span></div>
+        <div class="hero-stat"><b>1</b><span>connected workspace</span></div>
+        <div class="hero-stat"><b>∞</b><span>what-if scenarios</span></div>
+      </div>
+      <div class="hero-actions">
+        <button class="hero-action primary" onclick="show('opt1')">Explore sourcing →</button>
+        <button class="hero-action" onclick="show('opt2')">Plan the factory →</button>
+      </div>
+    </div>
+  </div>
+
+  <section class="decision-center" aria-labelledby="command-title">
+    <div class="dc-top">
+      <div>
+        <h3 id="command-title">Decision command center</h3>
+        <p>Start with a decision context, keep a local working draft, and see exactly which analyses are ready to brief.</p>
+        <div class="preset-row" aria-label="Scenario presets">
+          <button class="preset" onclick="applyPreset('baseline')">Balanced baseline</button>
+          <button class="preset" onclick="applyPreset('resilience')">Resilience shock</button>
+          <button class="preset" onclick="applyPreset('decarbonize')">Low-carbon push</button>
+        </div>
+      </div>
+      <div class="dc-actions">
+        <button class="hbtn" onclick="saveDraft()">Save draft</button>
+        <button class="hbtn" onclick="clearDraft()">Clear draft</button>
+        <span class="draft-status" id="draftStatus" role="status" aria-live="polite">Draft not saved</span>
+      </div>
+    </div>
+    <div class="progress-grid" id="decisionProgress" aria-live="polite"></div>
+  </section>
+
+  <div class="menu">
+    <div class="opt" tabindex="0" onclick="show('opt1')" onkeydown="if(event.key==='Enter')show('opt1')">
+      <div class="num">OPTION 1 — EXTERNAL NETWORK</div>
+      <h3>Strategic Sourcing &amp; Logistics</h3>
+      <div class="sub">Design the external supply network: who to buy from, how resilient they are, and how to deliver.</div>
+      <ol>
+        <li><span class="ph">P1</span><span><b>Multi-criteria supplier selection</b> via AHP across Cost, Quality, Delivery &amp; Sustainability — with hard consistency gating.</span></li>
+        <li><span class="ph">P2</span><span><b>Risk &amp; green filter</b> — disruption probability, carbon tax liability, and expected financial loss for the top two.</span></li>
+        <li><span class="ph">P3</span><span><b>Last-mile TSP</b> — use the course distance-matrix and route-sequence method across six regional hubs.</span></li>
+      </ol>
+      <span class="go">Enter track →</span>
+    </div>
+
+    <div class="opt" tabindex="0" onclick="show('opt2')" onkeydown="if(event.key==='Enter')show('opt2')">
+      <div class="num">OPTION 2 — INTERNAL NETWORK</div>
+      <h3>Factory Floor Operations</h3>
+      <div class="sub">Plan internal capacity, then let the production plan reshape the physical factory layout.</div>
+      <ol>
+        <li><span class="ph">P1</span><span><b>Aggregate planning LP</b> — six-month workforce, overtime &amp; inventory smoothing solved by Simplex.</span></li>
+        <li><span class="ph">P2</span><span><b>Facility layout</b> — the overtime count branches into a single- or multi-facility squared-Euclidean placement.</span></li>
+      </ol>
+      <span class="go">Enter track →</span>
+    </div>
+  </div>
+</section>
+
+<!-- ============ OPTION 1 ============ -->
+<section class="view" id="view-opt1">
+  <div class="crumb"><a onclick="goHome()">Home</a> / Option 1 · Strategic Sourcing &amp; Logistics</div>
+
+  <div class="phasenav">
+    <a onclick="document.getElementById('o1p1').scrollIntoView({behavior:'smooth'})">Phase 1 · AHP</a>
+    <a onclick="document.getElementById('o1p2').scrollIntoView({behavior:'smooth'})">Phase 2 · Risk &amp; Carbon</a>
+    <a onclick="document.getElementById('o1p3').scrollIntoView({behavior:'smooth'})">Phase 3 · TSP Routing</a>
+  </div>
+
+  <div class="phase-head" id="o1p1">
+    <span class="pn">PHASE 1</span>
+    <h2>Multi-Criteria Supplier Selection · AHP</h2>
+    <p>Evaluate four global suppliers across four criteria using the Analytic Hierarchy Process. Each pairwise matrix is checked for consistency — any matrix with <span style="font-family:var(--mono);color:var(--gold)">CR &gt; 0.10</span> blocks the analysis until you revise it.</p>
+  </div>
+
+  <!-- Criteria matrix -->
+  <div class="panel">
+    <h4><span class="ix">1.1</span> Criteria pairwise comparison</h4>
+    <div class="hint">Use <b>Guided judgments</b> to say which criterion matters more and by how much (Saaty 1–9) — the system builds the comparison matrix for you. Switch to <b>Matrix view</b> to edit cells directly.</div>
+    <div class="viewtoggle" id="critView">
+      <button class="active" onclick="critMode('guided')">Guided judgments</button>
+      <button onclick="critMode('matrix')">Matrix view</button>
+    </div>
+    <div class="guided" id="critGuided"></div>
+    <div class="mtx-wrap" id="critMtxWrap" style="display:none"><div id="critMtx"></div></div>
+    <div class="weights" id="critWeights"></div>
+    <div class="cr-row" id="critCR"></div>
+    <div class="alert" id="critAlert"></div>
+    <button class="btn ghost" style="margin-top:14px" id="critCalcBtn" onclick="toggleCalc('crit')">Show step-by-step calculations</button>
+    <div class="calc" id="critCalc"></div>
+  </div>
+
+  <!-- Supplier matrices -->
+  <div class="panel">
+    <h4><span class="ix">1.2</span> Supplier comparisons under each criterion</h4>
+    <div class="hint">Compare the four suppliers under each criterion. Switch criteria with the tabs — the dot turns green once a matrix is consistent.</div>
+    <div class="viewtoggle" id="supView">
+      <button class="active" onclick="setSupMode('guided')">Guided judgments</button>
+      <button onclick="setSupMode('matrix')">Matrix view</button>
+    </div>
+    <div class="subtabs" id="supTabs"></div>
+    <div class="guided" id="supGuided"></div>
+    <div id="supMtxArea" style="display:none"></div>
+    <div class="weights" id="supWeights"></div>
+    <div class="cr-row" id="supCR"></div>
+    <div class="alert" id="supAlert"></div>
+    <button class="btn ghost" style="margin-top:14px" id="supCalcBtn" onclick="toggleCalc('sup')">Show step-by-step calculations</button>
+    <div class="calc" id="supCalc"></div>
+  </div>
+
+  <!-- Synthesis -->
+  <div class="panel">
+    <h4><span class="ix">1.3</span> Final synthesis &amp; ranking</h4>
+    <div class="hint">Overall score = Σ (criterion weight × supplier weight under that criterion). The gate below stays locked until every matrix is consistent.</div>
+    <div class="actions">
+      <button class="btn" id="synthBtn" onclick="synthesize()">Compute final ranking</button>
+      <button class="btn ghost" onclick="loadAhpDemo()">Load sample values</button>
+    </div>
+    <div class="alert" id="synthAlert"></div>
+    <div class="final" id="finalArea" style="margin-top:18px"></div>
+  </div>
+
+  <!-- ===== PHASE 2 ===== -->
+  <div class="phase-head" id="o1p2" style="margin-top:42px">
+    <span class="pn">PHASE 2</span>
+    <h2>Risk-Resilient &amp; Green Monetisation Filter</h2>
+    <p>The two Phase-1 front-runners go head to head. For each we monetise the carbon footprint and the expected disruption cost<span class="tip" data-tip="EDC = P(disruption) x recovery weeks x weekly loss rate. P comes from the normal CDF of delivery time beyond your threshold.">i</span>, then total the landed cost to recommend the most resilient, cost-effective primary supplier.</p>
+  </div>
+
+  <div class="handoff" id="p2handoff"></div>
+
+  <div class="shared-bar">
+    <div class="lab"><b>Global parameter</b>Carbon tax price ($ / tonne CO₂)</div>
+    <input type="number" id="p2_tax" value="120" step="1" oninput="">
+    <div class="lab" style="color:var(--dim);font-size:12px">applied to both candidates' monetised emissions</div>
+  </div>
+
+  <div class="panel">
+    <h4><span class="ix">2.1</span> Candidate parameters</h4>
+    <div class="hint">Procurement, transport and holding costs; shipment distance, weight and emission factor; and the delivery-time distribution with a custom disruption threshold.</div>
+    <div class="grid2" id="p2forms"></div>
+    <div class="actions" style="margin-top:18px">
+      <button class="btn" onclick="runP2()">Run trade-off analysis</button>
+      <button class="btn ghost" onclick="resetP2()">Reset to sample scenario</button>
+    </div>
+  </div>
+
+  <div id="p2out"></div>
+
+  <!-- ===== PHASE 3 ===== -->
+  <div class="phase-head" id="o1p3" style="margin-top:42px">
+    <span class="pn">PHASE 3</span>
+    <h2>Last-Mile Delivery · TSP</h2>
+    <p>The winning supplier's goods are distributed from the port of entry across six regional hubs. Define a route using the distance matrix below, calculate the total route distance, and find the shortest closed tour. No sub-tour is allowed.</p>
+  </div>
+
+  <div class="panel">
+    <h4><span class="ix">3.0</span> Route locations</h4>
+    <div class="hint">Use the supplied distance matrix, or build one from an Ontario origin and five selected cities. The map uses OpenStreetMap and the matrix is calculated from live road-network driving distances in kilometres, then remains editable.</div>
+    <div class="route-mode" id="routeMode">
+      <button class="active" onclick="setRouteMode('matrix')">Distance matrix</button>
+      <button onclick="setRouteMode('ontario')">Ontario city map</button>
+    </div>
+    <div id="ontarioRoute" style="display:none">
+      <div class="city-field" style="max-width:300px"><label for="originCity">Node A · origin city</label><select id="originCity"></select></div>
+      <div class="ontario-controls" id="ontarioCityChoices"></div>
+      <div class="actions"><button class="btn" onclick="applyOntarioLocations()">Use these locations</button><button class="btn ghost" onclick="resetOntarioLocations()">Clear destinations</button></div>
+      <div class="map-note" id="mapPickStatus">Click a city marker to add it to the next available destination. The origin plus five destinations is assigned to nodes A–F.</div>
+      <div class="ontario-map" id="ontarioMap" aria-label="Ontario OpenStreetMap city selection map"></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h4><span class="ix">3.1</span> Inter-hub distance matrix</h4>
+    <div class="hint">When the Ontario map is not used, enter or randomise directed, asymmetric distances between hubs A–F. Each direction is editable independently.</div>
+    <div class="mtx-wrap"><div id="distMtx"></div></div>
+    <div class="actions" style="margin-top:16px">
+      <button class="btn" id="tspBtn" onclick="solveTSP()">Find shortest route</button>
+      <button class="btn ghost" onclick="randomTsp()">Randomise</button>
+    </div>
+    <div class="alert" id="tspAlert"></div>
+  </div>
+
+  <div class="panel" id="tspFormPanel" style="display:none">
+    <h4><span class="ix">3.2</span> Course route set-up</h4>
+    <div class="hint">Distance-matrix and route-sequence notation, generated from the values above.</div>
+    <div class="formula" id="tspFormula"></div>
+  </div>
+
+  <div class="panel" id="tspResPanel" style="display:none">
+    <h4><span class="ix">3.3</span> Optimal tour &amp; verification</h4>
+    <div id="tspResult"></div>
+  </div>
+</section>
+
+<!-- ============ OPTION 2 ============ -->
+<section class="view" id="view-opt2">
+  <div class="crumb"><a onclick="goHome()">Home</a> / Option 2 · Factory Floor Operations</div>
+
+  <div class="phasenav">
+    <a onclick="document.getElementById('o2p1').scrollIntoView({behavior:'smooth'})">Phase 1 · Aggregate LP</a>
+    <a onclick="document.getElementById('o2p2').scrollIntoView({behavior:'smooth'})">Phase 2 · Facility Layout</a>
+  </div>
+
+  <div class="phase-head" id="o2p1">
+    <span class="pn">PHASE 1</span>
+    <h2>Multi-Period Aggregate Planning · LP</h2>
+    <p>A six-month workforce, overtime and inventory model solved by Simplex (HiGHS). The number of months that rely on overtime drives the factory-layout branch in Phase 2.</p>
+  </div>
+
+  <div class="panel">
+    <h4><span class="ix">1.1</span> Planning parameters</h4>
+    <div class="hint">Monthly demand over the horizon, starting conditions, productivity, and the cost structure.</div>
+
+    <div class="subhead">Monthly demand forecast (units)</div>
+    <div class="demandrow">
+      <div class="pcell"><label>Month 1</label><input type="number" id="agD0" value="1000"></div>
+      <div class="pcell"><label>Month 2</label><input type="number" id="agD1" value="1000"></div>
+      <div class="pcell"><label>Month 3</label><input type="number" id="agD2" value="1200"></div>
+      <div class="pcell"><label>Month 4</label><input type="number" id="agD3" value="1000"></div>
+      <div class="pcell"><label>Month 5</label><input type="number" id="agD4" value="1000"></div>
+      <div class="pcell"><label>Month 6</label><input type="number" id="agD5" value="1200"></div>
+    </div>
+
+    <div class="subhead">Starting conditions &amp; productivity</div>
+    <div class="params">
+      <div class="pcell"><label>Initial inventory I₀ (units)</label><input type="number" id="agI0" value="0"></div>
+      <div class="pcell"><label>Initial workforce W₀</label><input type="number" id="agW0" value="25"></div>
+      <div class="pcell"><label>Output per worker (units/mo)</label><input type="number" id="agA" value="40"></div>
+      <div class="pcell"><label>Max overtime / month (units)</label><input type="number" id="agOT" value="400"></div>
+    </div>
+
+    <div class="subhead">Cost structure ($)</div>
+    <div class="params">
+      <div class="pcell"><label>Regular production ($/unit)</label><input type="number" id="agCR" value="12"></div>
+      <div class="pcell"><label>Overtime production ($/unit)</label><input type="number" id="agCO" value="20"></div>
+      <div class="pcell"><label>Inventory holding ($/unit/mo)</label><input type="number" id="agCI" value="10"></div>
+      <div class="pcell"><label>Hiring ($/worker)</label><input type="number" id="agCH" value="2000"></div>
+      <div class="pcell"><label>Layoff ($/worker)</label><input type="number" id="agCF" value="3000"></div>
+    </div>
+
+    <div class="actions" style="margin-top:18px">
+      <button class="btn" id="agBtn" onclick="solveAgg()">Formulate &amp; solve</button>
+      <button class="btn ghost" onclick="loadAggSample()">Load sample scenario</button>
+      <button class="btn ghost" id="compareBtn" onclick="showApproachComparison()" disabled>Compare approaches</button>
+    </div>
+    <div class="alert" id="agAlert"></div>
+  </div>
+
+  <div class="panel" id="agFormPanel" style="display:none">
+    <h4><span class="ix">1.2</span> Linear program — printed formulation</h4>
+    <div class="hint">Inventory-balance and workforce-smoothing equations, generated from the parameters before solving.</div>
+    <div class="formula" id="agFormula"></div>
+  </div>
+
+  <div class="panel" id="agResPanel" style="display:none">
+    <h4><span class="ix">1.3</span> Optimised operational roadmap</h4>
+    <div id="agResult"></div>
+  </div>
+
+  <div class="panel" id="approachPanel" style="display:none">
+    <h4><span class="ix">1.4</span> Planning approach comparison</h4>
+    <div class="hint">Three classic aggregate-planning approaches on the same demand. Chase varies the workforce each month to track demand (little inventory, heavy hire/fire). Level holds production constant and lets inventory absorb the swings (stable workforce, more holding). Balance is the cost-optimal mix from the LP above.</div>
+    <div id="approachResult"></div>
+  </div>
+
+  <!-- ===== PHASE 2 ===== -->
+  <div class="phase-head" id="o2p2" style="margin-top:42px">
+    <span class="pn">PHASE 2</span>
+    <h2>Material Handling &amp; Facility Layout</h2>
+    <p>The overtime-month count from Phase 1 decides whether the current layout is sufficient or an expansion is triggered — and how many new machines must be placed via the squared-Euclidean mini-sum method<span class="tip" data-tip="Minimises the sum of flow-weighted squared distances. Optimal coordinates are the flow-weighted centroid (single) or the solution of a small linear system (multi).">i</span>.</p>
+  </div>
+
+  <div class="panel" id="branchPanel">
+    <h4><span class="ix">2.1</span> Expansion decision</h4>
+    <div class="hint">Driven automatically by the number of months that required overtime production.</div>
+    <div id="branchResult"><div class="hint" style="color:var(--dim)">Solve Phase 1 first — the branch appears here.</div></div>
+  </div>
+
+  <div class="panel" id="layoutPanel">
+    <h4><span class="ix">2.2</span> Squared-Euclidean facility placement</h4>
+    <div class="hint" id="layoutHint">The expansion size from the branch above sets the structure of this placement problem.</div>
+    <div id="layoutConfig"><div class="hint" style="color:var(--dim)">Solve Phase 1 first — the placement set-up appears here once the branch is known.</div></div>
+    <div class="formula" id="layoutFormula" style="display:none"></div>
+    <div id="layoutResult"></div>
+  </div>
+</section>
+
+</div>
+</main>
+
+<div class="report" id="report"></div>
+
+<footer>
+  <b>Junaid · Minghui · M Zeeshan</b> &nbsp;|&nbsp; ENGG*6291 · Supply Chain Management · Summer 2026 · University of Guelph · Dr. Hussien Hegab &nbsp;|&nbsp; Global Logistics DSS · Mini Project 2 · v0.1
+</footer>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+/* ====================== Navigation ====================== */
+function show(view,btn){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('show'));
+  document.getElementById('view-'+view).classList.add('show');
+  document.querySelectorAll('#nav button').forEach(b=>b.classList.remove('active'));
+  const target = btn || document.querySelector('#nav button[data-view="'+view+'"]');
+  if(target) target.classList.add('active');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function goHome(){show('home');}
+
+/* ====================== Saaty scale ====================== */
+const SAATY = [
+  {v:1/9,l:'1/9'},{v:1/8,l:'1/8'},{v:1/7,l:'1/7'},{v:1/6,l:'1/6'},{v:1/5,l:'1/5'},
+  {v:1/4,l:'1/4'},{v:1/3,l:'1/3'},{v:1/2,l:'1/2'},{v:1,l:'1'},
+  {v:2,l:'2'},{v:3,l:'3'},{v:4,l:'4'},{v:5,l:'5'},{v:6,l:'6'},{v:7,l:'7'},{v:8,l:'8'},{v:9,l:'9'}
+];
+const RI = {1:0,2:0,3:0.58,4:0.90,5:1.12,6:1.24,7:1.32,8:1.41,9:1.45,10:1.49};
+
+/* ====================== AHP core math ====================== */
+function ahpCompute(M){
+  const n=M.length;
+  const colSum=Array(n).fill(0);
+  for(let j=0;j<n;j++) for(let i=0;i<n;i++) colSum[j]+=M[i][j];
+  // normalized matrix → row averages = weights
+  const w=Array(n).fill(0);
+  for(let i=0;i<n;i++){let s=0;for(let j=0;j<n;j++) s+=M[i][j]/colSum[j];w[i]=s/n;}
+  // weighted sum vector = M·w ; lambda_i = (Mw)_i / w_i
+  const lam=[];
+  for(let i=0;i<n;i++){let s=0;for(let j=0;j<n;j++) s+=M[i][j]*w[j]; lam.push(s/w[i]);}
+  const lmax=lam.reduce((a,b)=>a+b,0)/n;
+  const CI=(lmax-n)/(n-1);
+  const ri=RI[n]||1.49;
+  const CR=ri===0?0:CI/ri;
+  return {w,lmax,CI,CR,n};
+}
+
+/* ====================== Matrix builder ====================== */
+// state[key] = n×n array of numeric values
+const state={};
+function makeIdentity(n){return Array.from({length:n},(_,i)=>Array.from({length:n},(_,j)=>i===j?1:1));}
+
+function buildMatrix(key,labels,mountEl,onChange){
+  const n=labels.length;
+  if(!state[key]) state[key]=makeIdentity(n);
+  const M=state[key];
+  let html='<table class="mtx"><thead><tr><th></th>';
+  labels.forEach(l=>html+=`<th>${l}</th>`);
+  html+='</tr></thead><tbody>';
+  for(let i=0;i<n;i++){
+    html+=`<tr><th>${labels[i]}</th>`;
+    for(let j=0;j<n;j++){
+      if(i===j){html+=`<td class="diag">1</td>`;}
+      else if(i<j){
+        let opts=SAATY.map(s=>`<option value="${s.v}" ${Math.abs(s.v-M[i][j])<1e-9?'selected':''}>${s.l}</option>`).join('');
+        html+=`<td><select data-k="${key}" data-i="${i}" data-j="${j}">${opts}</select></td>`;
+      } else {
+        html+=`<td class="recip" id="r-${key}-${i}-${j}"><span>${fmtFrac(M[i][j])}</span></td>`;
+      }
+    }
+    html+='</tr>';
+  }
+  html+='</tbody></table>';
+  mountEl.innerHTML=html;
+  mountEl.querySelectorAll('select').forEach(sel=>{
+    sel.addEventListener('change',e=>{
+      const k=e.target.dataset.k, i=+e.target.dataset.i, j=+e.target.dataset.j;
+      const val=parseFloat(e.target.value);
+      state[k][i][j]=val; state[k][j][i]=1/val;
+      const rc=document.getElementById(`r-${k}-${j}-${i}`);
+      if(rc) rc.querySelector('span').textContent=fmtFrac(1/val);
+      onChange&&onChange();
+    });
+  });
+}
+function fmtFrac(v){
+  if(Math.abs(v-1)<1e-9) return '1';
+  if(v<1){const d=Math.round(1/v);return '1/'+d;}
+  return (Math.round(v*100)/100).toString();
+}
+
+/* ====================== Render helpers ====================== */
+function renderWeights(el,labels,w){
+  el.innerHTML=labels.map((l,i)=>`
+    <div class="wchip"><div class="l">${l}</div><div class="v">${w[i].toFixed(3)}</div>
+    <div class="bar"><i style="width:${(w[i]*100).toFixed(1)}%"></i></div></div>`).join('');
+}
+function renderCR(el,res){
+  const ok=res.CR<0.10;
+  el.innerHTML=`
+    <span class="cr-stat">λ<sub>max</sub> <b>${res.lmax.toFixed(3)}</b></span>
+    <span class="cr-stat">CI <b>${res.CI.toFixed(4)}</b></span>
+    <span class="cr-stat">RI <b>${(RI[res.n]||1.49).toFixed(2)}</b></span>
+    <span class="cr-badge ${ok?'ok':'bad'}"><span class="d"></span>CR = ${res.CR.toFixed(4)} ${ok?'< 0.10  consistent':'> 0.10  inconsistent'}</span>`;
+  return ok;
+}
+
+/* ====================== Phase 1 data ====================== */
+const CRITERIA=['Cost','Quality','Delivery','Sustainability'];
+const SUPPLIERS=['Supplier A','Supplier B','Supplier C','Supplier D'];
+let critRes=null;
+let supResults={};          // criterion -> {w,CR,...}
+let activeCrit=0;
+let critViewMode='guided';
+let supViewMode='guided';
+
+/* --- guided Saaty slider (system designs the matrix; reciprocal auto-set) --- */
+function saatyDesc(k){return {1:'equally important',2:'weak',3:'moderate',4:'moderate-plus',5:'strong',6:'strong-plus',7:'very strong',8:'very strong-plus',9:'extreme'}[k]||'';}
+function valToPos(v){ if(Math.abs(v-1)<1e-9)return 0; if(v>1)return -Math.round(v-1); return Math.round(1/v-1); }
+function posToVal(s){ s=+s; if(s===0)return 1; if(s<0)return (-s)+1; return 1/(s+1); }
+function guidedRead(s,li,lj){ s=+s; if(s===0)return 'Equally important (1)'; if(s<0){const k=(-s)+1;return `◀ ${li} ${k}× more important — ${saatyDesc(k)}`;} const k=s+1;return `${lj} ${k}× more important — ${saatyDesc(k)} ▶`; }
+function buildGuided(key,labels,mount,onChange){
+  const n=labels.length; const M=state[key]||(state[key]=makeIdentity(n));
+  let h='';
+  for(let i=0;i<n;i++)for(let j=i+1;j<n;j++){
+    const pos=valToPos(M[i][j]); const rid=`gr-${key}-${i}-${j}`;
+    h+=`<div class="gpair">
+      <div class="gpair-top"><span class="lab r">${labels[i]}</span><span class="gread" id="${rid}">${guidedRead(pos,labels[i],labels[j])}</span><span class="lab">${labels[j]}</span></div>
+      <input type="range" class="gslider" min="-8" max="8" step="1" value="${pos}" aria-label="${labels[i]} versus ${labels[j]} importance" data-k="${key}" data-i="${i}" data-j="${j}" data-li="${labels[i]}" data-lj="${labels[j]}" data-rid="${rid}">
+      <div class="gscale"><span>◀ 9 extreme · ${labels[i]}</span><span>1 equal</span><span>${labels[j]} · 9 extreme ▶</span></div>
+    </div>`;
+  }
+  mount.innerHTML=h;
+  mount.querySelectorAll('input.gslider').forEach(sl=>sl.addEventListener('input',e=>{
+    const t=e.target,k=t.dataset.k,i=+t.dataset.i,j=+t.dataset.j,v=posToVal(t.value);
+    state[k][i][j]=v; state[k][j][i]=1/v;
+    document.getElementById(t.dataset.rid).textContent=guidedRead(t.value,t.dataset.li,t.dataset.lj);
+    onChange&&onChange();
+  }));
+}
+
+/* --- step-by-step calculation walkthrough --- */
+function fmt3(v){return (Math.round(v*1000)/1000).toFixed(3);}
+function stepMatrix(head,labels,Mtx,fmtFn,opts={}){
+  const n=labels.length; let h=`<div class="step"><div class="steph">${head}</div><div style="overflow-x:auto"><table class="cmtx"><thead><tr><th></th>`;
+  labels.forEach(l=>h+=`<th>${l}</th>`); if(opts.weights) h+='<th>weight</th>';
+  h+='</tr></thead><tbody>';
+  for(let i=0;i<n;i++){ h+=`<tr><th>${labels[i]}</th>`; for(let j=0;j<n;j++) h+=`<td>${fmtFn(Mtx[i][j])}</td>`; if(opts.weights) h+=`<td class="wt">${fmt3(opts.weights[i])}</td>`; h+='</tr>'; }
+  if(opts.colSums){ h+='<tr class="sum"><td>Σ col</td>'; for(let j=0;j<n;j++) h+=`<td>${fmt3(opts.colSums[j])}</td>`; if(opts.weights) h+='<td></td>'; h+='</tr>'; }
+  h+='</tbody></table></div></div>'; return h;
+}
+function renderCalc(key,labels){
+  const M=state[key], n=labels.length;
+  const cs=Array(n).fill(0); for(let j=0;j<n;j++)for(let i=0;i<n;i++)cs[j]+=M[i][j];
+  const norm=M.map(row=>row.map((v,j)=>v/cs[j]));
+  const w=norm.map(r=>r.reduce((a,b)=>a+b,0)/n);
+  const ws=M.map(row=>row.reduce((a,v,j)=>a+v*w[j],0));
+  const lam=ws.map((s,i)=>s/w[i]);
+  const lmax=lam.reduce((a,b)=>a+b,0)/n;
+  const CI=(lmax-n)/(n-1), ri=RI[n]||1.49, CR=ri?CI/ri:0, ok=CR<0.10;
+  let h='';
+  h+=stepMatrix('<b>Step 1</b> — Pairwise comparison matrix (built from your judgments) with column sums',labels,M,fmtFrac,{colSums:cs});
+  h+=stepMatrix('<b>Step 2</b> — Normalise: divide each entry by its column sum; row averages give the weights',labels,norm,fmt3,{weights:w});
+  h+='<div class="step"><div class="steph"><b>Step 3</b> — Priority vector (average of each normalised row)</div>';
+  labels.forEach((l,i)=>{ h+=`<div class="cline">w(${l}) = (${norm[i].map(fmt3).join(' + ')}) / ${n} = <span class="g">${fmt3(w[i])}</span></div>`; });
+  h+=`<div class="cline" style="margin-top:5px">Σ weights = <span class="t">${fmt3(w.reduce((a,b)=>a+b,0))}</span></div></div>`;
+  h+='<div class="step"><div class="steph"><b>Step 4</b> — Consistency check</div>';
+  h+='<div class="cline">Weighted sum vector  A·w :</div>';
+  labels.forEach((l,i)=>{ h+=`<div class="cline">  ${l}: ${M[i].map((v,j)=>fmtFrac(v)+'·'+fmt3(w[j])).join(' + ')} = <span class="t">${fmt3(ws[i])}</span></div>`; });
+  h+=`<div class="cline" style="margin-top:5px">Consistency vector  λᵢ = (A·w)ᵢ / wᵢ = [ ${lam.map(fmt3).join(' , ')} ]</div>`;
+  h+=`<div class="cline">λmax = mean(λᵢ) = <span class="t">${fmt3(lmax)}</span></div>`;
+  h+=`<div class="cline">CI = (λmax − n)/(n − 1) = (${fmt3(lmax)} − ${n}) / ${n-1} = <span class="t">${fmt3(CI)}</span></div>`;
+  h+=`<div class="cline">RI(n=${n}) = ${(RI[n]||1.49).toFixed(2)}    →    CR = CI / RI = <span class="${ok?'g':'r'}">${fmt3(CR)}</span> ${ok?'&lt; 0.10  ✓ consistent — weights accepted':'&gt; 0.10  ✗ inconsistent — revise judgments'}</div></div>`;
+  return h;
+}
+function renderAllSupplierCalcs(){
+  return CRITERIA.map((criterion,i)=>`<section class="calc-criterion"><h5>${criterion}</h5><div class="criterion-note">Supplier pairwise comparison under ${criterion}</div>${renderCalc('sup'+i,SUPPLIERS)}</section>`).join('');
+}
+function toggleCalc(which){
+  const el=document.getElementById(which+'Calc'), btn=document.getElementById(which+'CalcBtn');
+  const labels=which==='crit'?CRITERIA:SUPPLIERS, key=which==='crit'?'crit':('sup'+activeCrit);
+  if(el.classList.contains('show')){ el.classList.remove('show'); btn.textContent='Show step-by-step calculations'; }
+  else { el.innerHTML=which==='sup'?renderAllSupplierCalcs():renderCalc(key,labels); el.classList.add('show'); btn.textContent='Hide step-by-step calculations'; }
+}
+
+/* --- Criteria matrix --- */
+function critMode(m){
+  critViewMode=m;
+  document.querySelectorAll('#critView button').forEach((b,i)=>b.classList.toggle('active',(i===0)===(m==='guided')));
+  document.getElementById('critGuided').style.display=m==='guided'?'flex':'none';
+  document.getElementById('critMtxWrap').style.display=m==='matrix'?'block':'none';
+  if(m==='guided') buildGuided('crit',CRITERIA,document.getElementById('critGuided'),refreshCrit);
+  else buildMatrix('crit',CRITERIA,document.getElementById('critMtx'),refreshCrit);
+}
+function refreshCrit(){
+  critRes=ahpCompute(state['crit']);
+  renderWeights(document.getElementById('critWeights'),CRITERIA,critRes.w);
+  const ok=renderCR(document.getElementById('critCR'),critRes);
+  const al=document.getElementById('critAlert');
+  if(ok){al.classList.remove('show');}
+  else{
+    al.classList.add('show');
+    al.innerHTML=`<b>Inconsistent criteria judgments.</b> CR = ${critRes.CR.toFixed(4)} exceeds 0.10. Revise the pairwise values — a common cause is an intransitive chain (e.g. A≫B, B≫C, but A≈C). The final ranking is locked until this matrix is consistent.`;
+  }
+  const c=document.getElementById('critCalc'); if(c.classList.contains('show')) c.innerHTML=renderCalc('crit',CRITERIA);
+}
+
+/* --- Supplier matrices --- */
+function buildSupTabs(){
+  const tabs=document.getElementById('supTabs');
+  tabs.innerHTML=CRITERIA.map((c,i)=>`<button data-c="${i}" onclick="switchCrit(${i})"><span class="mini"></span>${c}</button>`).join('');
+  CRITERIA.forEach((c,i)=>{ const key='sup'+i; if(!state[key]) state[key]=makeIdentity(SUPPLIERS.length); });
+  switchCrit(0);
+}
+function setSupMode(m){
+  supViewMode=m;
+  document.querySelectorAll('#supView button').forEach((b,i)=>b.classList.toggle('active',(i===0)===(m==='guided')));
+  renderSupView();
+}
+function renderSupView(){
+  const key='sup'+activeCrit;
+  const g=document.getElementById('supGuided'), a=document.getElementById('supMtxArea');
+  if(supViewMode==='guided'){ g.style.display='flex'; a.style.display='none'; buildGuided(key,SUPPLIERS,g,refreshSup); }
+  else { g.style.display='none'; a.style.display='block'; buildMatrix(key,SUPPLIERS,a,refreshSup); }
+}
+function switchCrit(i){
+  activeCrit=i;
+  document.querySelectorAll('#supTabs button').forEach(b=>b.classList.toggle('active',+b.dataset.c===i));
+  renderSupView();
+  refreshSup();
+}
+function refreshSup(){
+  const key='sup'+activeCrit;
+  const res=ahpCompute(state[key]);
+  supResults[activeCrit]=res;
+  renderWeights(document.getElementById('supWeights'),SUPPLIERS,res.w);
+  const ok=renderCR(document.getElementById('supCR'),res);
+  const al=document.getElementById('supAlert');
+  if(ok){al.classList.remove('show');}
+  else{
+    al.classList.add('show');
+    al.innerHTML=`<b>Inconsistent supplier judgments under ${CRITERIA[activeCrit]}.</b> CR = ${res.CR.toFixed(4)} exceeds 0.10. Revise this matrix before synthesising.`;
+  }
+  const tabBtn=document.querySelector(`#supTabs button[data-c="${activeCrit}"]`);
+  tabBtn.classList.toggle('ok',ok); tabBtn.classList.toggle('bad',!ok);
+  const c=document.getElementById('supCalc'); if(c.classList.contains('show')) c.innerHTML=renderAllSupplierCalcs();
+}
+
+/* --- Synthesis with hard gate --- */
+function synthesize(){
+  const al=document.getElementById('synthAlert');
+  const fa=document.getElementById('finalArea');
+  fa.classList.remove('show');
+
+  // ensure all supplier matrices computed
+  CRITERIA.forEach((c,i)=>{ supResults[i]=ahpCompute(state['sup'+i]); });
+  critRes=ahpCompute(state['crit']);
+
+  // collect violations
+  const bad=[];
+  if(critRes.CR>=0.10) bad.push(`Criteria matrix (CR ${critRes.CR.toFixed(3)})`);
+  CRITERIA.forEach((c,i)=>{ if(supResults[i].CR>=0.10) bad.push(`${c} (CR ${supResults[i].CR.toFixed(3)})`); });
+
+  if(bad.length){
+    al.classList.add('show');
+    al.innerHTML=`<b>Synthesis blocked — ${bad.length} inconsistent matri${bad.length>1?'ces':'x'}.</b> Fix: ${bad.join(' · ')}. Every matrix must satisfy CR &lt; 0.10 before a ranking can be trusted.`;
+    return;
+  }
+  al.classList.remove('show');
+
+  // overall scores
+  const cw=critRes.w;
+  const totals=SUPPLIERS.map((s,si)=>{
+    let t=0; CRITERIA.forEach((c,ci)=>{ t+=cw[ci]*supResults[ci].w[si]; });
+    return t;
+  });
+  const maxT=Math.max(...totals);
+  const order=totals.map((t,i)=>({i,t})).sort((a,b)=>b.t-a.t);
+
+  let html='<table class="scores"><thead><tr><th>Supplier</th>';
+  CRITERIA.forEach((c,ci)=>html+=`<th>${c}<br><span style="color:var(--dim)">w=${cw[ci].toFixed(3)}</span></th>`);
+  html+='<th>Total</th><th>Rank</th></tr></thead><tbody>';
+  SUPPLIERS.forEach((s,si)=>{
+    const win=Math.abs(totals[si]-maxT)<1e-9;
+    const rank=order.findIndex(o=>o.i===si)+1;
+    html+=`<tr class="${win?'win':''}"><th>${s}</th>`;
+    CRITERIA.forEach((c,ci)=>{
+      html+=`<td>${(cw[ci]*supResults[ci].w[si]).toFixed(3)}</td>`;
+    });
+    html+=`<td class="tot">${totals[si].toFixed(3)}</td><td>${rank}</td></tr>`;
+  });
+  html+='</tbody></table>';
+  const winner=SUPPLIERS[order[0].i], runner=SUPPLIERS[order[1].i];
+  html+=`<div class="rank-line">Recommended primary supplier: <b>${winner}</b> &nbsp;(score ${order[0].t.toFixed(3)}). Runner-up <b style="color:var(--blue);font-size:14px">${runner}</b> (${order[1].t.toFixed(3)}) — these two advance to the Phase 2 risk &amp; green filter.</div>`;
+  // radar of supplier profiles across criteria
+  const seriesW=SUPPLIERS.map((s,si)=>CRITERIA.map((c,ci)=>supResults[ci].w[si]));
+  html+=drawRadar(CRITERIA,SUPPLIERS,seriesW);
+  fa.innerHTML=html; fa.classList.add('show');
+  fa.scrollIntoView({behavior:'smooth',block:'nearest'});
+
+  // ---- hand-off to Phase 2: lock the top two candidates ----
+  p2names=[SUPPLIERS[order[0].i],SUPPLIERS[order[1].i]];
+  p2scores=[order[0].t,order[1].t];
+  buildP2(); updateHandoff();
+
+  // ---- store for PDF report ----
+  ahpReport={
+    criteria:CRITERIA, suppliers:SUPPLIERS, cw:[...cw],
+    cells:SUPPLIERS.map((s,si)=>CRITERIA.map((c,ci)=>cw[ci]*supResults[ci].w[si])),
+    totals:[...totals], order:order.map(o=>({i:o.i,t:o.t})),
+    winner:SUPPLIERS[order[0].i], runner:SUPPLIERS[order[1].i],
+    critCR:critRes.CR, supCR:CRITERIA.map((c,i)=>supResults[i].CR)
+  };
+  updateSummary();
+}
+let ahpReport=null;
+
+/* --- Sample values --- */
+function loadAhpDemo(){
+  // criteria: Cost, Quality, Delivery, Sustainability
+  state['crit']=[
+    [1,    1/3, 2,   3  ],
+    [3,    1,   5,   4  ],
+    [1/2,  1/5, 1,   2  ],
+    [1/3,  1/4, 1/2, 1  ]
+  ];
+  // supplier matrices per criterion (consistent-ish sample data)
+  state['sup0']=[ [1,3,5,4],[1/3,1,3,2],[1/5,1/3,1,1/2],[1/4,1/2,2,1] ];      // Cost
+  state['sup1']=[ [1,1/3,1/5,1/2],[3,1,1/2,2],[5,2,1,3],[2,1/2,1/3,1] ];      // Quality
+  state['sup2']=[ [1,2,4,3],[1/2,1,3,2],[1/4,1/3,1,1/2],[1/3,1/2,2,1] ];      // Delivery
+  state['sup3']=[ [1,1/2,1/3,1],[2,1,1/2,2],[3,2,1,3],[1,1/2,1/3,1] ];        // Sustainability
+  critMode(critViewMode);
+  refreshCrit();
+  CRITERIA.forEach((c,i)=>{ supResults[i]=ahpCompute(state['sup'+i]); });
+  switchCrit(0);
+}
+
+/* ====================== Phase 2 · Risk & Green filter ====================== */
+let p2names=['Supplier A','Supplier B'];
+let p2scores=null;
+
+// normal CDF via Abramowitz–Stegun erf
+function erf(x){
+  const s=x<0?-1:1; x=Math.abs(x);
+  const t=1/(1+0.3275911*x);
+  const y=1-(((((1.061405429*t-1.453152027)*t)+1.421413741)*t-0.284496736)*t+0.254829592)*t*Math.exp(-x*x);
+  return s*y;
+}
+const Phi=z=>0.5*(1+erf(z/Math.SQRT2));
+
+const P2FIELDS=[
+  {g:'Financial & Logistical ($)',items:[
+    {k:'proc', l:'Base procurement cost',          d:[1450000,1520000]},
+    {k:'trans',l:'Baseline transport charge',      d:[220000,90000]},
+    {k:'inv',  l:'Inventory holding cost',         d:[130000,55000]},
+  ]},
+  {g:'Environmental',items:[
+    {k:'dist', l:'Distance travelled (km)',        d:[16000,1200]},
+    {k:'wt',   l:'Shipment weight (tonnes)',       d:[300,300]},
+    {k:'ef',   l:'Emission factor (kgCO₂/t·km)',   d:[0.075,0.075]},
+  ]},
+  {g:'Probabilistic Risk',items:[
+    {k:'mu',   l:'Mean delivery time μ (days)',    d:[20,20]},
+    {k:'sd',   l:'Std dev σ (days)',               d:[5.4623,3.5585]},
+    {k:'thr',  l:'Disruption threshold (days)',    d:[25,25]},
+    {k:'rec',  l:'Recovery time (weeks)',          d:[12,6]},
+    {k:'loss', l:'Loss rate ($ / week)',           d:[75000,75000]},
+  ]},
+];
+
+function buildP2(){
+  const mount=document.getElementById('p2forms');
+  if(!mount) return;
+  // preserve any values the user already typed
+  const prev={};
+  mount.querySelectorAll('input').forEach(inp=>prev[inp.id]=inp.value);
+  let html='';
+  for(let s=0;s<2;s++){
+    html+=`<div class="scard"><h5><span class="tag">${s===0?'PRIMARY':'CHALLENGER'}</span>${p2names[s]}</h5>`;
+    P2FIELDS.forEach(grp=>{
+      html+=`<div class="fgroup"><div class="gh">${grp.g}</div>`;
+      grp.items.forEach(it=>{
+        const id=`p2_${s}_${it.k}`;
+        const val=(id in prev)?prev[id]:it.d[s];
+        html+=`<div class="field"><label>${it.l}</label><input type="number" id="${id}" value="${val}" step="any"></div>`;
+      });
+      html+='</div>';
+    });
+    html+='</div>';
+  }
+  mount.innerHTML=html;
+}
+function resetP2(){
+  document.getElementById('p2forms').innerHTML='';
+  buildP2();
+  document.getElementById('p2_tax').value=80;
+  document.getElementById('p2out').innerHTML='';
+}
+function updateHandoff(){
+  const h=document.getElementById('p2handoff');
+  if(!h) return;
+  if(p2scores){
+    h.className='handoff';
+    h.innerHTML=`<span class="ic">→ Phase 1 hand-off</span> Candidates advancing: <b>${p2names[0]}</b> (score ${p2scores[0].toFixed(3)}) <span class="vs">vs</span> <b>${p2names[1]}</b> (score ${p2scores[1].toFixed(3)})`;
+  }else{
+    h.className='handoff warn';
+    h.innerHTML=`<span class="ic">⚠ placeholders</span> Phase 1 not yet synthesised — using sample candidates. Run <b>1.3 Compute final ranking</b> to lock the real top two.`;
+  }
+}
+
+function gv(id){const v=parseFloat(document.getElementById(id).value);return isFinite(v)?v:0;}
+
+function runP2(){
+  const tax=gv('p2_tax');
+  const R=[];
+  for(let s=0;s<2;s++){
+    const proc=gv(`p2_${s}_proc`), trans=gv(`p2_${s}_trans`), inv=gv(`p2_${s}_inv`);
+    const dist=gv(`p2_${s}_dist`), wt=gv(`p2_${s}_wt`), ef=gv(`p2_${s}_ef`);
+    const mu=gv(`p2_${s}_mu`), sd=gv(`p2_${s}_sd`), thr=gv(`p2_${s}_thr`), rec=gv(`p2_${s}_rec`), loss=gv(`p2_${s}_loss`);
+    const z=(thr-mu)/sd;
+    const pdis=1-Phi(z);
+    const TC=proc+trans+inv;                       // economic cost
+    const emis_kg=dist*wt*ef;                       // kg CO2
+    const emis_t=emis_kg/1000;                      // tonnes CO2
+    const CC=emis_t*tax;                            // carbon cost
+    const EDC=pdis*rec*loss;                        // expected disruption cost
+    const total=TC+CC+EDC;                          // total supply chain cost
+    R.push({proc,trans,inv,dist,wt,ef,mu,sd,thr,rec,loss,z,pdis,emis_kg,emis_t,TC,CC,EDC,total});
+  }
+  p2tax=tax;
+  renderP2(R,tax);
+}
+let p2tax=120;
+
+const money=v=>'$'+v.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+
+function renderP2(R,tax){
+  const out=document.getElementById('p2out');
+  // ---- substituted-algebra console blocks ----
+  let blocks='';
+  for(let s=0;s<2;s++){
+    const r=R[s];
+    blocks+=`<div class="panel"><h4><span class="ix">2.2</span> ${p2names[s]} — substituted formulation</h4>
+    <div class="formula"><span class="ttl">Economic cost (TC)</span>
+  TC = procurement + transport + inventory
+     = ${money(r.proc)} + ${money(r.trans)} + ${money(r.inv)} = <span class="res">${money(r.TC)}</span>
+
+<span class="ttl">Monetised carbon cost (CC)</span>
+  emissions = distance × weight × EF = ${r.dist} × ${r.wt} × ${r.ef} = <span class="hl">${r.emis_kg.toLocaleString()} kgCO₂ = ${r.emis_t.toFixed(2)} tCO₂</span>
+  CC = emissions(t) × carbonTax = ${r.emis_t.toFixed(2)} × ${money(tax)}/t = <span class="res">${money(r.CC)}</span>
+
+<span class="ttl">Expected disruption cost (EDC)</span>
+  z = (threshold − μ)/σ = (${r.thr} − ${r.mu})/${r.sd} = <span class="hl">${r.z.toFixed(4)}</span>
+  P(disruption) = 1 − Φ(z) = <span class="res">${r.pdis.toFixed(4)}</span>  (${(r.pdis*100).toFixed(2)}%)
+  EDC = P × recovery × lossRate = ${r.pdis.toFixed(4)} × ${r.rec} × ${money(r.loss)} = <span class="res">${money(r.EDC)}</span>
+
+<span class="ttl">Total supply chain cost</span>
+  TSC = TC + CC + EDC = ${money(r.TC)} + ${money(r.CC)} + ${money(r.EDC)} = <span class="res">${money(r.total)}</span></div></div>`;
+  }
+
+  // ---- trade-off matrix (inputs + TC/CC/EDC summary) ----
+  const aWin=R[0].total<=R[1].total;
+  const best=(a,b,lowerWins=true)=>{
+    if(lowerWins) return [a<=b, b<=a];
+    return [a>=b, b>=a];
+  };
+  const num=v=>v.toLocaleString('en-US',{maximumFractionDigits:2,minimumFractionDigits:2});
+
+  const inputRows=[
+    ['Procurement Cost','proc',money],
+    ['Transportation Cost','trans',money],
+    ['Inventory Cost','inv',money],
+    ['Distance (km)','dist',num],
+    ['Shipment Weight (tonnes)','wt',num],
+    ['Emission Factor (kgCO₂/t·km)','ef',v=>v.toString()],
+    ['Probability of Disruption','pdis',v=>v.toFixed(2)],
+    ['Recovery time (weeks)','rec',v=>v.toString()],
+    ['Loss Rate (per week)','loss',money],
+  ];
+  // which input rows get "lower is better" highlight
+  const hi={proc:1,trans:1,inv:1,dist:1,pdis:1};
+
+  let tbl=`<div class="panel"><h4><span class="ix">2.3</span> Trade-off matrix &amp; recommendation</h4>
+  <div class="hint">Inputs at top, monetised summary below. The winner is the lower <b>Total Supply Chain Cost</b>.</div>
+  <table class="tradeoff"><thead><tr><th></th><th>${p2names[0]}</th><th>${p2names[1]}</th></tr></thead><tbody>`;
+  inputRows.forEach(([lab,key,fmt])=>{
+    const a=R[0][key],b=R[1][key];
+    let ca='',cb='';
+    if(hi[key]){const[wa,wb]=best(a,b);ca=wa?'best':'';cb=wb?'best':'';}
+    tbl+=`<tr><th>${lab}</th><td class="${ca}">${fmt(a)}</td><td class="${cb}">${fmt(b)}</td></tr>`;
+  });
+  // summary block
+  const sumRows=[['Economic Cost (TC)','TC'],['Carbon Cost (CC)','CC'],['Expected Disruption Cost (EDC)','EDC']];
+  tbl+=`<tr class="total" style="background:transparent"><th colspan="3" style="background:var(--bg);border:none;height:8px"></th></tr>`;
+  sumRows.forEach(([lab,key])=>{
+    const a=R[0][key],b=R[1][key];const[wa,wb]=best(a,b);
+    tbl+=`<tr><th>${lab}</th><td class="${wa?'best':''}">${money(a)}</td><td class="${wb?'best':''}">${money(b)}</td></tr>`;
+  });
+  tbl+=`<tr class="total"><th>Total Supply Chain Cost</th><td class="${aWin?'best':''}">${money(R[0].total)}</td><td class="${!aWin?'best':''}">${money(R[1].total)}</td></tr>`;
+  tbl+='</tbody></table>';
+
+  const win=aWin?0:1, lose=aWin?1:0;
+  const delta=Math.abs(R[0].total-R[1].total);
+  p2winner=p2names[win];
+  tbl+=`<div class="rank-line">Recommended primary supplier: <b>${p2names[win]}</b> — total supply chain cost ${money(R[win].total)}, undercutting ${p2names[lose]} by ${money(delta)} at a ${(R[win].pdis*100).toFixed(2)}% disruption probability. This supplier feeds the Phase 3 last-mile network.</div>`;
+
+  // ---- TC / CC / EDC stacked bars ----
+  const comps=[{k:'TC',l:'Economic (TC)',c:'#2563eb'},{k:'CC',l:'Carbon (CC)',c:'#14b8a6'},{k:'EDC',l:'Disruption (EDC)',c:'#ef4444'}];
+  const shortM=v=> v>=1e6 ? '$'+(v/1e6).toFixed(2)+'M' : v>=1e3 ? '$'+(v/1e3).toFixed(0)+'k' : '$'+v.toFixed(0);
+  const maxTot=Math.max(R[0].total,R[1].total);
+  let bars='<div class="barwrap">';
+  for(let s=0;s<2;s++){
+    bars+=`<div class="barrow"><div class="nm" title="${p2names[s]}">${p2names[s]}</div><div class="track">`;
+    comps.forEach(c=>{
+      const w=(R[s][c.k]/maxTot)*100;
+      const lbl=w>13?shortM(R[s][c.k]):'';
+      bars+=`<div class="seg" style="width:${w}%;background:${c.c}" title="${c.l}: ${money(R[s][c.k])}">${lbl}</div>`;
+    });
+    bars+=`</div><div class="bartot">${money(R[s].total)}</div></div>`;
+  }
+  bars+='<div class="barlegend">'+comps.map(c=>`<span><i style="background:${c.c}"></i>${c.l}</span>`).join('')+'</div></div>';
+  tbl+=bars;
+
+  tbl+='</div>';
+
+  out.innerHTML=blocks+tbl;
+  out.scrollIntoView({behavior:'smooth',block:'nearest'});
+
+  // ---- store for PDF report ----
+  p2Report={R,tax,names:[...p2names],win,inputRows:inputRows.map(([l,k,f])=>[l,k]),sumRows};
+  updateSummary();
+}
+let p2winner=null;
+let p2Report=null;
+
+/* ====================== Phase 3 · TSP route search ====================== */
+let HUBS=['A','B','C','D','E','F'];
+const LECTURE_D=[
+ [0,608,566,860,985,1204],
+ [634,0,361,412,825,762],
+ [590,384,0,316,500,640],
+ [882,441,338,0,500,361],
+ [1018,792,522,547,0,510],
+ [1176,739,674,392,538,0]
+];
+let distD=LECTURE_D.map(r=>r.slice());
+let p3tour=null,p3dist=null;
+const ONTARIO_CITIES=[
+  ['Toronto',43.6532,-79.3832],['Ottawa',45.4215,-75.6972],['Mississauga',43.5890,-79.6441],['Hamilton',43.2557,-79.8711],['London',42.9849,-81.2453],
+  ['Brampton',43.7315,-79.7624],['Markham',43.8561,-79.3370],['Vaughan',43.8361,-79.4983],['Kitchener',43.4516,-80.4925],['Windsor',42.3149,-83.0364],
+  ['Oshawa',43.8971,-78.8658],['Barrie',44.3894,-79.6903],['Kingston',44.2312,-76.4860],['Sarnia',42.9745,-82.4066],['Niagara Falls',43.0896,-79.0849],
+  ['Greater Sudbury',46.4917,-80.9930],['Peterborough',44.3091,-78.3197],['Owen Sound',44.5690,-80.9406],['North Bay',46.3091,-79.4608],['Newmarket',44.0592,-79.4613]
+];
+let ontarioMap=null,ontarioLayer=null,ontarioRouteActive=false;
+const cityByName=name=>ONTARIO_CITIES.find(c=>c[0]===name);
+function cityOptions(selected,blank=false,excluded=new Set()){return `${blank?'<option value="">Choose a city</option>':''}${ONTARIO_CITIES.filter(([name])=>name===selected||!excluded.has(name)).map(([name])=>`<option value="${name}" ${name===selected?'selected':''}>${name}</option>`).join('')}`;}
+function buildOntarioSelectors(){
+  const origin=document.getElementById('originCity');
+  if(!origin)return;
+  origin.innerHTML=cityOptions('Toronto');
+  document.getElementById('ontarioCityChoices').innerHTML=Array.from({length:5},(_,i)=>`<div class="city-field"><label for="routeCity${i}">Node ${String.fromCharCode(66+i)} city</label><select id="routeCity${i}">${cityOptions('',true)}</select></div>`).join('');
+  refreshOntarioSelectOptions();
+  setMapPickStatus('Click a city marker to add it to the next available destination. A is the origin; B–F are the five destinations.');
+}
+function refreshOntarioSelectOptions(){
+  const origin=document.getElementById('originCity');if(!origin)return;
+  const destinations=Array.from({length:5},(_,i)=>document.getElementById(`routeCity${i}`));
+  const currentOrigin=origin.value, currentDestinations=destinations.map(s=>s.value);
+  origin.innerHTML=cityOptions(currentOrigin,false,new Set(currentDestinations.filter(Boolean)));
+  destinations.forEach((select,i)=>{
+    const excluded=new Set([currentOrigin,...currentDestinations.filter((name,j)=>j!==i&&name)]);
+    select.innerHTML=cityOptions(currentDestinations[i],true,excluded);
+  });
+}
+function setRouteMode(mode){
+  document.querySelectorAll('#routeMode button').forEach(b=>b.classList.toggle('active',b.textContent.toLowerCase().includes(mode==='ontario'?'ontario':'distance')));
+  const panel=document.getElementById('ontarioRoute');panel.style.display=mode==='ontario'?'block':'none';
+  if(mode==='ontario'){initOntarioMap();setTimeout(()=>ontarioMap?.invalidateSize(),0);refreshOntarioMap();}
+}
+function initOntarioMap(){
+  if(ontarioMap||!window.L)return;
+  ontarioMap=L.map('ontarioMap',{scrollWheelZoom:false}).setView([44.2,-79.5],7);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18,attribution:'© OpenStreetMap contributors'}).addTo(ontarioMap);
+  ontarioLayer=L.featureGroup().addTo(ontarioMap);
+}
+function refreshOntarioMap(route){
+  if(!ontarioMap||!ontarioLayer)return;
+  ontarioLayer.clearLayers();
+  const names=route||[document.getElementById('originCity')?.value,...Array.from({length:5},(_,i)=>document.getElementById(`routeCity${i}`)?.value)].filter(Boolean);
+  const points=names.map(cityByName).filter(Boolean);
+  ONTARIO_CITIES.forEach(([name,lat,lng])=>{const i=names.indexOf(name),label=i>=0?`${String.fromCharCode(65+i)} · ${name}`:name;L.circleMarker([lat,lng],{radius:i>=0?9:6,color:i>=0?'#f59e0b':'#4f7cff',fillColor:i>=0?'#f59e0b':'#4f7cff',fillOpacity:i>=0?.95:.55,weight:2}).bindTooltip(label,{direction:'top'}).on('click',()=>addCityFromMap(name)).addTo(ontarioLayer);});
+  if(points.length>1){const coords=points.map(([,lat,lng])=>[lat,lng]);L.polyline(coords,{color:'#4f7cff',weight:3,dashArray:'6 6'}).addTo(ontarioLayer);ontarioMap.fitBounds(L.latLngBounds(coords),{padding:[26,26]});}
+}
+function setMapPickStatus(message){const el=document.getElementById('mapPickStatus');if(el)el.textContent=message;}
+function selectedOntarioNames(){return [document.getElementById('originCity')?.value,...Array.from({length:5},(_,i)=>document.getElementById(`routeCity${i}`)?.value)].filter(Boolean);}
+function addCityFromMap(name){
+  const origin=document.getElementById('originCity');const dests=Array.from({length:5},(_,i)=>document.getElementById(`routeCity${i}`));
+  if(name===origin.value){setMapPickStatus(`${name} is already node A (origin).`);return;}
+  if(dests.some(s=>s.value===name)){setMapPickStatus(`${name} is already selected.`);return;}
+  const slot=dests.find(s=>!s.value);
+  if(!slot){setMapPickStatus('All five destination slots are full. Clear a destination or select another city from its list.');return;}
+  slot.value=name;refreshOntarioSelectOptions();setMapPickStatus(`${name} added as node ${String.fromCharCode(66+dests.indexOf(slot))}.`);refreshOntarioMap();
+}
+function resetOntarioLocations(){buildOntarioSelectors();refreshOntarioMap();}
+async function fetchDrivingMatrix(cities){
+  const coords=cities.map(([,lat,lng])=>`${lng},${lat}`).join(';');
+  const response=await fetch(`https://router.project-osrm.org/table/v1/driving/${coords}?annotations=distance`);
+  if(!response.ok)throw new Error(`routing service returned ${response.status}`);
+  const data=await response.json();
+  if(data.code!=='Ok'||!data.distances||data.distances.some(r=>r.some(v=>v==null)))throw new Error('driving distances were unavailable for one or more city pairs');
+  return data.distances.map((row,i)=>row.map((metres,j)=>i===j?0:Math.round(metres/1000)));
+}
+async function applyOntarioLocations(){
+  const names=[document.getElementById('originCity').value,...Array.from({length:5},(_,i)=>document.getElementById(`routeCity${i}`).value)];
+  if(names.some(n=>!n)||new Set(names).size!==names.length){showTspAlert('Choose one origin and five different destination cities.');return;}
+  const btn=[...document.querySelectorAll('#ontarioRoute .btn')].find(b=>b.textContent.includes('Use these'));btn.disabled=true;btn.textContent='Calculating driving distances…';setMapPickStatus('Calculating road distances in kilometres…');
+  try{
+    const cities=names.map(cityByName);const drivingMatrix=await fetchDrivingMatrix(cities);
+    HUBS=['A','B','C','D','E','F'];distD=drivingMatrix;ontarioRouteActive=true;buildDistMtx();refreshOntarioMap(names);setRouteMode('matrix');hideTspAlert();
+  }catch(err){showTspAlert(`Could not obtain live driving distances: ${err.message}. Check your internet connection and try again.`);setMapPickStatus('Driving-distance calculation could not be completed.');}
+  finally{btn.disabled=false;btn.textContent='Use these locations';}
+}
+
+function buildDistMtx(){
+  const n=HUBS.length; let h='<table class="mtx dmtx"><thead><tr><th></th>';
+  HUBS.forEach(c=>h+=`<th>${c}</th>`); h+='</tr></thead><tbody>';
+  for(let i=0;i<n;i++){
+    h+=`<tr><th>${HUBS[i]}</th>`;
+    for(let j=0;j<n;j++){
+      if(i===j) h+=`<td class="dg">—</td>`;
+      else h+=`<td><input type="number" id="d-${i}-${j}" value="${distD[i][j]}" step="any" oninput="onDist(${i},${j},this.value)"></td>`;
+    }
+    h+='</tr>';
+  }
+  h+='</tbody></table>';
+  document.getElementById('distMtx').innerHTML=h;
+}
+function onDist(i,j,v){
+  const val=parseFloat(v); if(!isFinite(val))return;
+  distD[i][j]=val;
+}
+function loadTspLecture(){ HUBS=['A','B','C','D','E','F'];distD=LECTURE_D.map(r=>r.slice());ontarioRouteActive=false;buildDistMtx(); }
+function randomTsp(){
+  const n=HUBS.length;
+  for(let i=0;i<n;i++)for(let j=0;j<n;j++)if(i!==j)distD[i][j]=Math.round(180+Math.random()*1120);
+  for(let i=0;i<n;i++) distD[i][i]=0;
+  buildDistMtx();
+}
+function showTspAlert(m){const a=document.getElementById('tspAlert');a.classList.add('show');a.innerHTML='<b>Check input.</b> '+m;}
+function hideTspAlert(){document.getElementById('tspAlert').classList.remove('show');}
+
+function buildTspFormula(){
+  const n=HUBS.length, L=HUBS;
+  let s='';
+  s+=`<span class="ttl">TSP — Distance matrix and route sequence</span>\n`;
+  s+=`Hubs: ${L.join('  ·  ')}\n\n`;
+  s+=`<span class="ttl">Distance input</span>\n`;
+  s+=`  dᵢⱼ = distance travelled from hub i to hub j, taken from the matrix above.\n\n`;
+  s+=`<span class="ttl">Route decision</span>\n`;
+  s+=`  Select one closed route that starts at ${L[0]}, visits every hub once, and returns to ${L[0]}.\n  Route = ${L[0]} → hub₂ → hub₃ → … → hubₙ → ${L[0]}\n\n`;
+  s+=`<span class="ttl">Objective function</span>\n`;
+  s+=`  minimize  Z = d[${L[0]},hub₂] + d[hub₂,hub₃] + … + d[hubₙ,${L[0]}]\n\n`;
+  s+=`<span class="ttl">Route rule</span>\n`;
+  s+=`  Each hub has one departure and one arrival in the selected route.\n  The solver evaluates feasible closed tours using this distance-matrix set-up.`;
+  return s;
+}
+
+const TSP_PY=`
+import numpy as np, json
+from scipy.optimize import milp, LinearConstraint, Bounds
+D = np.array(D_js.to_py(), dtype=float)
+n = D.shape[0]
+edges = [(i,j) for i in range(n) for j in range(n) if i!=j]
+E = len(edges)
+eidx = {e:k for k,e in enumerate(edges)}
+nvar = E + (n-1)
+c = np.zeros(nvar)
+for (i,j),k in eidx.items():
+    c[k] = D[i,j]
+def uidx(i): return E + (i-1)
+rows=[]; lo=[]; hi=[]
+for i in range(n):
+    r=np.zeros(nvar)
+    for j in range(n):
+        if i!=j: r[eidx[(i,j)]]=1
+    rows.append(r); lo.append(1); hi.append(1)
+for j in range(n):
+    r=np.zeros(nvar)
+    for i in range(n):
+        if i!=j: r[eidx[(i,j)]]=1
+    rows.append(r); lo.append(1); hi.append(1)
+for i in range(1,n):
+    for j in range(1,n):
+        if i!=j:
+            r=np.zeros(nvar)
+            r[uidx(i)]=1; r[uidx(j)]=-1; r[eidx[(i,j)]]=n
+            rows.append(r); lo.append(-np.inf); hi.append(n-1)
+A=np.array(rows)
+cons=LinearConstraint(A, np.array(lo), np.array(hi))
+integ=np.zeros(nvar); integ[:E]=1
+vlo=np.zeros(nvar); vhi=np.full(nvar, np.inf)
+for k in range(E):
+    vlo[k]=0; vhi[k]=1
+for i in range(1,n):
+    vlo[uidx(i)]=1; vhi[uidx(i)]=n-1
+res=milp(c=c, constraints=cons, integrality=integ, bounds=Bounds(vlo,vhi))
+out={'ok': bool(res.success)}
+if res.success:
+    x=res.x
+    succ={}
+    for (i,j),k in eidx.items():
+        if x[k]>0.5: succ[i]=j
+    tour=[0]; cur=0
+    for _ in range(n-1):
+        cur=succ.get(cur,-1)
+        if cur==-1: break
+        tour.append(cur)
+    visited=set(tour)
+    no_sub=(len(visited)==n) and (succ.get(tour[-1])==0)
+    out.update({'dist':float(res.fun),'tour':[int(t) for t in tour],'no_subtour':bool(no_sub)})
+else:
+    out['msg']=str(res.message)
+json.dumps(out)
+`;
+
+async function solveTSP(){
+  const n=HUBS.length;
+  for(let i=0;i<n;i++)for(let j=0;j<n;j++) if(i!==j && !(distD[i][j]>0)){
+    showTspAlert('Every off-diagonal distance must be a positive number. Check '+HUBS[i]+'→'+HUBS[j]+'.'); return;
+  }
+  hideTspAlert();
+  document.getElementById('tspFormPanel').style.display='block';
+  document.getElementById('tspFormula').innerHTML=buildTspFormula();
+  const btn=document.getElementById('tspBtn'); btn.disabled=true; btn.textContent='Solving…';
+  try{
+    const py=await loadSolver();
+    py.globals.set('D_js', distD);
+    const out=await py.runPythonAsync(TSP_PY);
+    renderTSP(JSON.parse(out));
+  }catch(e){
+    showTspAlert('Solver error: '+e.message);
+  }finally{
+    btn.disabled=false; btn.textContent='Find shortest route';
+  }
+}
+
+function renderTSP(res){
+  const panel=document.getElementById('tspResPanel'); panel.style.display='block';
+  const el=document.getElementById('tspResult');
+  if(!res.ok){ el.innerHTML='<div class="alert show">Solver could not find an optimal tour. '+(res.msg||'')+'</div>'; return; }
+  const seq=[...res.tour,res.tour[0]].map(i=>HUBS[i]);
+  const seqHtml=seq.map((h,k)=>k?`<span class="arr">→</span>${h}`:h).join('');
+  el.innerHTML=`
+    <div class="tourseq">${seqHtml}</div>
+    <div class="bigstat">
+      <div class="s"><div class="v">${res.dist.toLocaleString()}</div><div class="l">minimum tour distance</div></div>
+      <div class="s"><div class="v">${HUBS.length}</div><div class="l">hubs visited exactly once</div></div>
+    </div>
+    <div class="verify"><span class="d"></span>Verified — closed route visits every hub once</div>
+    <div class="routebox">${drawTour(res.tour,false,ontarioRouteActive?selectedOntarioNames():null)}</div>`;
+  panel.scrollIntoView({behavior:'smooth',block:'nearest'});
+  p3tour=seq.join(' → '); p3dist=res.dist;
+  p3Report={tour:[...res.tour], seq, dist:res.dist, no_subtour:res.no_subtour, formula:buildTspFormula(), D:distD.map(r=>r.slice()), locations:ontarioRouteActive?selectedOntarioNames():null};
+  if(ontarioRouteActive){const cities=selectedOntarioNames();refreshOntarioMap([...res.tour,res.tour[0]].map(i=>cities[i]));}
+  updateSummary();
+}
+let p3Report=null;
+
+function drawTour(tour,light,locations){
+  const n=HUBS.length, W=560, H=430, cx=W/2, cy=H/2+6, R=158, nodeR=23;
+  const labelCol=light?'#475569':'#a8c4e0', titleCol=light?'#64748b':'#6b8aaa';
+  const pos=[];
+  for(let i=0;i<n;i++){const a=-Math.PI/2+i*2*Math.PI/n; pos.push([cx+R*Math.cos(a),cy+R*Math.sin(a)]);}
+  const seq=[...tour,tour[0]];
+  let edgesSvg='',labelsSvg='';
+  for(let k=0;k<seq.length-1;k++){
+    const A=pos[seq[k]],B=pos[seq[k+1]];
+    let dx=B[0]-A[0],dy=B[1]-A[1]; const len=Math.hypot(dx,dy)||1; dx/=len; dy/=len;
+    const x1=A[0]+dx*nodeR, y1=A[1]+dy*nodeR, x2=B[0]-dx*(nodeR+9), y2=B[1]-dy*(nodeR+9);
+    // Draw every arrowhead directly instead of using an SVG marker. Markers use document-wide
+    // fragment IDs and can disappear when multiple route SVGs are present (for example in a report).
+    const baseX=x2-dx*12, baseY=y2-dy*12, wingX=-dy*7, wingY=dx*7;
+    const arrow=`${x2.toFixed(1)},${y2.toFixed(1)} ${(baseX+wingX).toFixed(1)},${(baseY+wingY).toFixed(1)} ${(baseX-wingX).toFixed(1)},${(baseY-wingY).toFixed(1)}`;
+    const anim=light?'':'class="tour-edge" style="animation-delay:'+(k*0.12).toFixed(2)+'s"';
+    const edgeTip=`${HUBS[seq[k]]} → ${HUBS[seq[k+1]]}: ${Math.round(distD[seq[k]][seq[k+1]])} km`;
+    edgesSvg+=`<g ${anim} data-tooltip="${edgeTip}"><line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${(x2-dx*8).toFixed(1)}" y2="${(y2-dy*8).toFixed(1)}" stroke="#36b6c9" stroke-width="3.5" stroke-linecap="round"/><polygon points="${arrow}" fill="#39d6a3"/></g>`;
+    const mx=(x1+x2)/2,my=(y1+y2)/2,px=-dy,py=dx,side=k%2===0?1:-1,offset=16+(k%3)*7;
+    const routeLabel=`${HUBS[seq[k]]}→${HUBS[seq[k+1]]} · ${Math.round(distD[seq[k]][seq[k+1]])} km`;
+    const lx=mx+px*offset*side,ly=my+py*offset*side,w=Math.max(48,routeLabel.length*5.6);
+    labelsSvg+=`<g><rect x="${(lx-w/2).toFixed(1)}" y="${(ly-8).toFixed(1)}" width="${w.toFixed(1)}" height="15" rx="5" fill="${light?'#ffffff':'#101a2f'}" fill-opacity=".94" stroke="${light?'#cbd5e1':'#2b3a52'}"/><text x="${lx.toFixed(1)}" y="${(ly+3).toFixed(1)}" fill="${labelCol}" font-size="8.5" font-family="monospace" text-anchor="middle">${routeLabel}</text></g>`;
+  }
+  let nodesSvg='';
+  for(let i=0;i<n;i++){
+    const [x,y]=pos[i]; const start=(i===tour[0]);
+    const nodeTip=`Node ${HUBS[i]}${locations?.[i]?' · '+locations[i]:''}${start?' · tour origin':''}`;
+    nodesSvg+=`<circle data-tooltip="${nodeTip}" cx="${x}" cy="${y}" r="${nodeR}" fill="${start?'#f59e0b':'#1e293b'}" stroke="${start?'#f59e0b':'#2563eb'}" stroke-width="2.5"/>`;
+    nodesSvg+=`<text x="${x}" y="${y+6}" text-anchor="middle" fill="${start?'#0b1220':'#f0f6ff'}" font-family="'Space Grotesk',sans-serif" font-weight="700" font-size="17">${HUBS[i]}</text>`;
+    if(locations?.[i])nodesSvg+=`<text x="${x}" y="${y+nodeR+13}" text-anchor="middle" fill="${labelCol}" font-family="monospace" font-size="8.5">${locations[i]}</text>`;
+  }
+  return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
+    <text x="${cx}" y="24" text-anchor="middle" fill="${titleCol}" font-family="monospace" font-size="11">OPTIMAL TOUR · ${locations?'Ontario driving route':'schematic hub layout'} · gold = start</text>
+    ${edgesSvg}${labelsSvg}${nodesSvg}
+  </svg>`;
+}
+
+
+
+let pyodideReady=null;
+function loadSolver(){
+  if(pyodideReady) return pyodideReady;
+  const chip=document.getElementById('solverChip');
+  chip.classList.add('loading'); document.getElementById('solverTxt').textContent='loading engine…';
+  pyodideReady=(async()=>{
+    const s=document.createElement('script');
+    s.src='https://cdn.jsdelivr.net/pyodide/v0.26.2/full/pyodide.js';
+    document.head.appendChild(s);
+    await new Promise(r=>s.onload=r);
+    const py=await loadPyodide();
+    await py.loadPackage(['numpy','scipy']);
+    chip.classList.remove('loading'); chip.classList.add('ready');
+    document.getElementById('solverTxt').textContent='solver ready';
+    return py;
+  })();
+  return pyodideReady;
+}
+
+/* ====================== Option 2 · Aggregate Planning LP ====================== */
+function showAgAlert(m){const a=document.getElementById('agAlert');a.classList.add('show');a.innerHTML='<b>Check input.</b> '+m;}
+function hideAgAlert(){document.getElementById('agAlert').classList.remove('show');}
+
+function readAgg(){
+  const D=[];
+  for(let i=0;i<6;i++){const v=parseFloat(document.getElementById('agD'+i).value); if(!isFinite(v)||v<0){showAgAlert('Demand for month '+(i+1)+' must be ≥ 0.');return null;} D.push(v);}
+  const num=id=>parseFloat(document.getElementById(id).value);
+  const P={T:6,D,I0:num('agI0'),W0:num('agW0'),a:num('agA'),OT:num('agOT'),cR:num('agCR'),cO:num('agCO'),cI:num('agCI'),cH:num('agCH'),cF:num('agCF')};
+  for(const k of ['I0','W0','a','OT','cR','cO','cI','cH','cF']) if(!isFinite(P[k])){showAgAlert('Please fill in every parameter field.');return null;}
+  if(P.a<=0){showAgAlert('Output per worker must be positive.');return null;}
+  hideAgAlert(); return P;
+}
+function loadAggSample(){
+  const def={agD0:1000,agD1:1000,agD2:1200,agD3:1000,agD4:1000,agD5:1200,agI0:0,agW0:25,agA:40,agOT:400,agCR:12,agCO:20,agCI:10,agCH:2000,agCF:3000};
+  for(const k in def) document.getElementById(k).value=def[k];
+}
+function machineCount(m){return m===0?0:m<=2?1:m===3?2:m===4?3:4;}
+
+function buildAggFormula(P){
+  const D=P.D,T=P.T; let s='';
+  s+=`<span class="ttl">Decision variables (integer, months t = 1…${T})</span>\n`;
+  s+=`  PRₜ regular-time production   POₜ overtime production   Iₜ ending inventory\n  Wₜ workforce   Hₜ workers hired   Fₜ workers fired\n\n`;
+  s+=`<span class="ttl">Objective</span>\n`;
+  s+=`  minimize  Z = Σₜ ( ${P.cR} PRₜ + ${P.cO} POₜ + ${P.cI} Iₜ + ${P.cH} Hₜ + ${P.cF} Fₜ )\n\n`;
+  s+=`<span class="ttl">Inventory balance   Iₜ = Iₜ₋₁ + PRₜ + POₜ − Dₜ</span>\n`;
+  for(let t=0;t<T;t++){const prev=t===0?`I₀ = ${P.I0}`:`I_${t}`; s+=`  I_${t+1} = ${prev} + PR_${t+1} + PO_${t+1} − ${D[t]}\n`;}
+  s+=`\n<span class="ttl">Workforce balance   Wₜ = Wₜ₋₁ + Hₜ − Fₜ</span>\n`;
+  for(let t=0;t<T;t++){const prev=t===0?`${P.W0}`:`W_${t}`; s+=`  W_${t+1} = ${prev} + H_${t+1} − F_${t+1}\n`;}
+  s+=`\n<span class="ttl">Capacity constraints</span>\n`;
+  s+=`  PRₜ ≤ ${P.a} Wₜ            (regular production capacity)\n`;
+  s+=`  POₜ ≤ ${P.OT}              (overtime cap)\n`;
+  s+=`  Dₜ ≤ Iₜ₋₁ + PRₜ + POₜ     (demand is met; Iₜ ≥ 0)\n`;
+  s+=`  PRₜ, POₜ, Iₜ, Wₜ, Hₜ, Fₜ ≥ 0  and integer`;
+  return s;
+}
+
+const AGG_PY=`
+import numpy as np, json
+from scipy.optimize import milp, LinearConstraint, Bounds
+P = PARS.to_py()
+T=int(P['T']); D=P['D']; I0=P['I0']; W0=P['W0']; a=P['a']
+cR=P['cR']; cO=P['cO']; cI=P['cI']; cH=P['cH']; cF=P['cF']; OT=P['OT']
+nvar=6*T
+def PR(t): return t
+def PO(t): return T+t
+def Iv(t): return 2*T+t
+def Wv(t): return 3*T+t
+def Hv(t): return 4*T+t
+def Fv(t): return 5*T+t
+c=np.zeros(nvar)
+for t in range(T):
+    c[PR(t)]=cR; c[PO(t)]=cO; c[Iv(t)]=cI; c[Hv(t)]=cH; c[Fv(t)]=cF
+Aeq=[]; beq=[]
+for t in range(T):
+    r=np.zeros(nvar); r[Iv(t)]=1; r[PR(t)]=-1; r[PO(t)]=-1
+    if t>0: r[Iv(t-1)]=-1
+    beq.append(I0 - D[0] if t==0 else -D[t]); Aeq.append(r)
+for t in range(T):
+    r=np.zeros(nvar); r[Wv(t)]=1; r[Hv(t)]=-1; r[Fv(t)]=1
+    if t>0: r[Wv(t-1)]=-1
+    beq.append(W0 if t==0 else 0); Aeq.append(r)
+Aub=[]; bub=[]
+for t in range(T):
+    r=np.zeros(nvar); r[PR(t)]=1; r[Wv(t)]=-a; Aub.append(r); bub.append(0)
+for t in range(T):
+    r=np.zeros(nvar); r[PO(t)]=1; Aub.append(r); bub.append(OT)
+cons=[LinearConstraint(np.array(Aeq), np.array(beq), np.array(beq)),
+      LinearConstraint(np.array(Aub), -np.inf, np.array(bub))]
+lb=np.zeros(nvar); ub=np.full(nvar, np.inf)
+res=milp(c=c, constraints=cons, integrality=np.ones(nvar), bounds=Bounds(lb,ub))
+out={'ok':bool(res.success)}
+if res.success:
+    x=np.round(res.x)
+    months=[]
+    for t in range(T):
+        months.append({'D':D[t],'PR':float(x[PR(t)]),'PO':float(x[PO(t)]),'I':float(x[Iv(t)]),'W':float(x[Wv(t)]),'H':float(x[Hv(t)]),'F':float(x[Fv(t)])})
+    ot_months=sum(1 for t in range(T) if x[PO(t)]>0.5)
+    out.update({'cost':float(res.fun),'months':months,'ot_months':int(ot_months)})
+else:
+    out['msg']=str(res.message)
+json.dumps(out)
+`;
+
+async function solveAgg(){
+  const P=readAgg(); if(!P) return;
+  document.getElementById('agFormPanel').style.display='block';
+  document.getElementById('agFormula').innerHTML=buildAggFormula(P);
+  const btn=document.getElementById('agBtn'); btn.disabled=true; btn.textContent='Solving…';
+  try{
+    const py=await loadSolver();
+    py.globals.set('PARS', P);
+    const out=await py.runPythonAsync(AGG_PY);
+    renderAgg(JSON.parse(out), P);
+  }catch(e){ showAgAlert('Solver error: '+e.message); }
+  finally{ btn.disabled=false; btn.textContent='Formulate & solve'; }
+}
+
+function renderAgg(res,P){
+  const panel=document.getElementById('agResPanel'); panel.style.display='block';
+  const el=document.getElementById('agResult');
+  if(!res.ok){ el.innerHTML='<div class="alert show">LP infeasible or solver error. '+(res.msg||'')+'</div>'; return; }
+  const m=res.months, r1=v=>v.toLocaleString('en-US',{maximumFractionDigits:1});
+  let tbl='<div style="overflow-x:auto"><table class="roadmap"><thead><tr><th>Month</th><th>Demand</th><th>Regular</th><th>Overtime</th><th>Inventory</th><th>Workforce</th><th>Hired</th><th>Fired</th></tr></thead><tbody>';
+  m.forEach((mo,t)=>{
+    const ot=mo.PO>0.5;
+    tbl+=`<tr class="${ot?'ot':''}"><th>M${t+1}</th><td>${r1(mo.D)}</td><td>${r1(mo.PR)}</td><td class="${ot?'otv':''}">${r1(mo.PO)}</td><td>${r1(mo.I)}</td><td>${r1(mo.W)}</td><td>${r1(mo.H)}</td><td>${r1(mo.F)}</td></tr>`;
+  });
+  tbl+='</tbody></table></div>';
+  el.innerHTML=`
+    <div class="bigstat">
+      <div class="s"><div class="v">$${res.cost.toLocaleString('en-US',{maximumFractionDigits:0})}</div><div class="l">minimum total cost</div></div>
+      <div class="s"><div class="v">${res.ot_months}</div><div class="l">months using overtime</div></div>
+    </div>${tbl}
+    <div class="aggchart">${drawAggChart(m,P)}</div>`;
+  panel.scrollIntoView({behavior:'smooth',block:'nearest'});
+  renderBranch(res.ot_months);
+  renderApproachComparison(P,m,res.cost);
+  agReport={months:m,cost:res.cost,ot:res.ot_months,P,formula:buildAggFormula(P)};
+  updateSummary();
+}
+let agReport=null;
+let approachData=null;
+
+function renderApproachComparison(P,balanced,balanceCost){
+  const plan=(name,months)=>{
+    const production=months.reduce((s,r)=>s+P.cR*r.PR,0), inventory=months.reduce((s,r)=>s+P.cI*r.I,0), hirefire=months.reduce((s,r)=>s+P.cH*r.H+P.cF*r.F,0), overtime=months.reduce((s,r)=>s+P.cO*r.PO,0);
+    const workforce=months.map(r=>r.W), ot=months.filter(r=>r.PO>0.01).length;
+    return {name,months,production,inventory,hirefire,overtime,cost:production+inventory+hirefire+overtime,ending:months.at(-1).I,ot,workforce:`${Math.round(Math.min(...workforce))}–${Math.round(Math.max(...workforce))}`};
+  };
+  let inv=P.I0, prevW=P.W0;
+  const chase=[];
+  P.D.forEach(D=>{const needed=Math.max(0,D-inv), PR=needed, PO=0, W=PR/P.a,H=Math.max(0,W-prevW),F=Math.max(0,prevW-W);inv=inv+PR-D;chase.push({PR,PO,I:inv,W,H,F});prevW=W;});
+  const levelRate=Math.max(0,(P.D.reduce((a,b)=>a+b,0)-P.I0)/P.T), levelW=levelRate/P.a; inv=P.I0;
+  const level=P.D.map((D,t)=>{const PR=levelRate;let PO=Math.max(0,D-inv-PR);PO=Math.min(PO,P.OT);inv=Math.max(0,inv+PR+PO-D);return {PR,PO,I:inv,W:levelW,H:t===0?Math.max(0,levelW-P.W0):0,F:t===0?Math.max(0,P.W0-levelW):0};});
+  const rows=[plan('Chase',chase),plan('Level',level),plan('Balance (optimal)',balanced)];
+  const fmt=v=>v.toLocaleString('en-US',{maximumFractionDigits:0});
+  const best=rows.reduce((a,b)=>a.cost<b.cost?a:b);
+  approachData={P,rows,best,active:2};
+  document.getElementById('approachPanel').style.display='none';
+  document.getElementById('compareBtn').disabled=false;
+}
+
+function showApproachComparison(){
+  if(!approachData){showAgAlert('Solve the aggregate plan first, then compare approaches.');return;}
+  const {P,rows,best,active}=approachData;
+  document.getElementById('approachPanel').style.display='block';
+  document.getElementById('approachResult').innerHTML=`<div style="overflow-x:auto"><table class="tradeoff"><thead><tr><th>Strategy</th><th>Production</th><th>Inventory</th><th>Hire / Fire</th><th>Overtime</th><th>Total cost</th><th>Workforce</th><th>OT months</th></tr></thead><tbody>${rows.map(r=>`<tr class="${r.name===best.name?'total':''}"><th>${r.name}</th><td>${money(r.production)}</td><td>${money(r.inventory)}</td><td>${money(r.hirefire)}</td><td>${money(r.overtime)}</td><td class="${r.name===best.name?'best':''}">${money(r.cost)}</td><td>${r.workforce}</td><td>${r.ot}</td></tr>`).join('')}</tbody></table></div><div class="compare-tabs">${rows.map((r,i)=>`<button class="${i===active?'active':''}" onclick="setComparisonStrategy(${i})">${r.name}</button>`).join('')}</div><div class="strategy-chart" id="strategyChart">${drawStrategyPlanChart(rows[active],P)}</div><div class="hint" style="margin-top:14px">Lowest-cost strategy: <b style="color:var(--jade)">${best.name}</b> at <b>${money(best.cost)}</b>. Chase follows demand closely but can create workforce churn; Level holds a steadier crew and carries inventory; Balance combines regular production, inventory, hiring/firing and overtime to minimise the total cost.</div>`;
+  document.getElementById('approachPanel').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+function setComparisonStrategy(index){approachData.active=index;showApproachComparison();}
+
+function drawStrategyChart(rows){
+  const W=820,H=280,pl=126,pr=112,pt=44,pb=30,iw=W-pl-pr,max=Math.max(...rows.map(r=>r.cost))||1;
+  const cols=[['production','#2f68e8','Production'],['inventory','#21bfa6','Inventory'],['hirefire','#a855f7','Hire / Fire'],['overtime','#f59e0b','Overtime']];
+  let g='';
+  cols.forEach(([,c,l],i)=>{const x=pl+i*120;g+=`<rect x="${x}" y="12" width="12" height="12" rx="2" fill="${c}"/><text x="${x+18}" y="22" fill="#a8c4e0" font-size="11" font-family="monospace">${l}</text>`;});
+  for(let t=0;t<=4;t++){const x=pl+iw*t/4;g+=`<line x1="${x}" y1="${pt-2}" x2="${x}" y2="${H-pb}" stroke="#ffffff" stroke-opacity=".1"/><text x="${x}" y="${H-8}" text-anchor="middle" fill="#7891b0" font-size="10" font-family="monospace">$${Math.round(max*t/4/1000)}k</text>`;}
+  rows.forEach((r,i)=>{const y=pt+i*62+12;let x=pl;g+=`<text x="${pl-14}" y="${y+19}" text-anchor="end" fill="#d5e2f4" font-size="14" font-family="'Space Grotesk',sans-serif">${r.name.replace(' (optimal)','')}</text>`;cols.forEach(([key,c])=>{const w=r[key]/max*iw;if(w>.2){g+=`<rect x="${x.toFixed(1)}" y="${y}" width="${w.toFixed(1)}" height="34" rx="3" fill="${c}"/>`;x+=w;}});g+=`<text x="${(x+10).toFixed(1)}" y="${y+22}" fill="#f0f6ff" font-size="12" font-family="monospace">${money(r.cost)}</text>`;});
+  return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">${g}</svg>`;
+}
+
+function drawStrategyPlanChart(strategy,P){
+  const m=strategy.months,W=820,H=340,pl=58,pr=26,pt=42,pb=40,iw=W-pl-pr,ih=H-pt-pb;
+  const maxY=Math.max(P.I0,...P.D,...m.map(r=>r.PR+r.PO),...m.map(r=>r.I))*1.16||1;
+  const y=v=>pt+ih-v/maxY*ih, slot=iw/m.length, bw=slot*.48;
+  let g='';
+  for(let k=0;k<=4;k++){const val=maxY*k/4, yy=y(val);g+=`<line x1="${pl}" y1="${yy.toFixed(1)}" x2="${W-pr}" y2="${yy.toFixed(1)}" stroke="#ffffff" stroke-opacity=".1"/><text x="${pl-10}" y="${(yy+4).toFixed(1)}" text-anchor="end" fill="#8ca4c4" font-family="monospace" font-size="10">${Math.round(val)}</text>`;}
+  let demand='',inventory=`M${pl},${y(P.I0).toFixed(1)} `;
+  m.forEach((r,i)=>{const cx=pl+slot*i+slot/2,x=cx-bw/2,regH=r.PR/maxY*ih,otH=r.PO/maxY*ih,yReg=pt+ih-regH;g+=`<rect data-tooltip="${strategy.name} · Month ${i+1} · Regular: ${Math.round(r.PR)} units" x="${x.toFixed(1)}" y="${yReg.toFixed(1)}" width="${bw.toFixed(1)}" height="${regH.toFixed(1)}" rx="3" fill="#2f68e8"/>`;if(otH>.2)g+=`<rect data-tooltip="${strategy.name} · Month ${i+1} · Overtime: ${Math.round(r.PO)} units" x="${x.toFixed(1)}" y="${(yReg-otH).toFixed(1)}" width="${bw.toFixed(1)}" height="${otH.toFixed(1)}" rx="3" fill="#f59e0b"/>`;const dy=y(P.D[i]);demand+=`${i?'L':'M'}${cx.toFixed(1)},${dy.toFixed(1)} `;inventory+=`L${cx.toFixed(1)},${y(r.I).toFixed(1)} `;g+=`<text x="${cx.toFixed(1)}" y="${H-12}" text-anchor="middle" fill="#a8c4e0" font-family="monospace" font-size="11">M${i+1}</text>`;});
+  g+=`<path d="${demand}" fill="none" stroke="#f34c53" stroke-width="3" stroke-dasharray="6 6"/><path d="${inventory}" fill="none" stroke="#19bfa9" stroke-width="3"/><circle cx="${pl}" cy="${y(P.I0).toFixed(1)}" r="4" fill="#19bfa9"/><text x="${pl+8}" y="${(y(P.I0)-8).toFixed(1)}" fill="#49e1cc" font-size="10" font-family="monospace">I₀ ${Math.round(P.I0)}</text>`;
+  m.forEach((r,i)=>{const cx=pl+slot*i+slot/2,dy=y(P.D[i]);g+=`<circle data-tooltip="Month ${i+1} · Demand: ${Math.round(P.D[i])} units" cx="${cx.toFixed(1)}" cy="${dy.toFixed(1)}" r="5" fill="#f34c53" stroke="#0b1220" stroke-width="2"/><circle data-tooltip="Month ${i+1} · Ending inventory: ${Math.round(r.I)} units" cx="${cx.toFixed(1)}" cy="${y(r.I).toFixed(1)}" r="4" fill="#19bfa9"/>`;});
+  const lg=`<g font-family="monospace" font-size="11"><rect x="${pl}" y="12" width="12" height="12" fill="#2f68e8"/><text x="${pl+18}" y="22" fill="#a8c4e0">Regular</text><rect x="${pl+112}" y="12" width="12" height="12" fill="#f59e0b"/><text x="${pl+130}" y="22" fill="#a8c4e0">Overtime</text><circle cx="${pl+236}" cy="18" r="5" fill="#f34c53"/><text x="${pl+248}" y="22" fill="#a8c4e0">Demand</text><line x1="${pl+330}" y1="18" x2="${pl+346}" y2="18" stroke="#19bfa9" stroke-width="3"/><text x="${pl+354}" y="22" fill="#a8c4e0">Inventory</text></g>`;
+  return `<div class="chart-title">${strategy.name} plan · regular production, overtime, demand and inventory</div><svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">${g}${lg}</svg>`;
+}
+
+function renderBranch(otm){
+  const el=document.getElementById('branchResult');
+  const mc=machineCount(otm);
+  if(otm===0){
+    el.innerHTML=`<div class="branch a"><div class="big">$0</div><div class="txt"><div class="cfg">Configuration A · Stable baseline</div>The optimal schedule needs <b>no overtime</b> across the horizon, so current workshop capacity is sufficient. No new machines are added and the expansion cost is <b>$0</b>.</div></div>`;
+  }else{
+    el.innerHTML=`<div class="branch"><div class="big">${mc}</div><div class="txt"><div class="cfg">Configuration B · Overtime-driven expansion</div>Overtime was used in <b>${otm} month${otm>1?'s':''}</b>, breaching capacity. The threshold rule requires <b>${mc} new machine${mc>1?'s':''}</b>, to be placed by the ${mc<=1?'single':'multi'}-facility squared-Euclidean mini-sum method.</div></div>`;
+  }
+  agBranch={otm,machines:mc,mode:mc<=1?'single':'multi'};
+  refreshLayout();
+}
+let agBranch=null;
+
+function drawAggChart(m,P){
+  const W=640,H=300,pl=46,pr=30,pt=20,pb=34;
+  const iw=W-pl-pr, ih=H-pt-pb;
+  const initialInventory=P.I0;
+  const maxY=Math.max(initialInventory,...m.map(x=>Math.max(x.D,x.PR+x.PO,x.I)))*1.12||1;
+  const n=m.length, slot=iw/n, bw=slot*0.5;
+  const yOf=v=>pt+ih-(v/maxY)*ih;
+  let g='';
+  for(let s=0;s<=4;s++){
+    const val=maxY*s/4, y=yOf(val);
+    g+=`<line x1="${pl}" y1="${y.toFixed(1)}" x2="${W-pr}" y2="${y.toFixed(1)}" stroke="#ffffff" stroke-opacity="0.08"/>`;
+    g+=`<text x="${pl-8}" y="${(y+4).toFixed(1)}" text-anchor="end" font-size="10" font-family="monospace" fill="#8aa2bd">${Math.round(val)}</text>`;
+  }
+  let dline='',iline=`M${pl.toFixed(1)},${yOf(initialInventory).toFixed(1)} `;
+  m.forEach((mo,t)=>{
+    const cx=pl+slot*t+slot/2, x=cx-bw/2;
+    const hReg=(mo.PR/maxY)*ih, hOT=(mo.PO/maxY)*ih, yReg=pt+ih-hReg;
+    g+=`<rect data-tooltip="Month ${t+1} · Regular production: ${Math.round(mo.PR)} units" x="${x.toFixed(1)}" y="${yReg.toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(hReg,0).toFixed(1)}" fill="#2563eb" rx="2"/>`;
+    if(hOT>0.5) g+=`<rect data-tooltip="Month ${t+1} · Overtime: ${Math.round(mo.PO)} units" x="${x.toFixed(1)}" y="${(yReg-hOT).toFixed(1)}" width="${bw.toFixed(1)}" height="${hOT.toFixed(1)}" fill="#f59e0b" rx="2"/>`;
+    g+=`<text x="${cx.toFixed(1)}" y="${(H-12).toFixed(1)}" text-anchor="middle" font-size="11" font-family="monospace" fill="#a8c4e0">M${t+1}</text>`;
+    const dy=yOf(mo.D);
+    dline+=`${t?'L':'M'}${cx.toFixed(1)},${dy.toFixed(1)} `;
+    iline+=`L${cx.toFixed(1)},${yOf(mo.I).toFixed(1)} `;
+    g+=`<circle data-tooltip="Month ${t+1} · Demand: ${Math.round(mo.D)} units" cx="${cx.toFixed(1)}" cy="${dy.toFixed(1)}" r="4" fill="#ef4444" stroke="#0b1220" stroke-width="1"/>`;
+  });
+  // Overlay the demand and inventory paths after the bars so I₀ → Iₜ stays visible.
+  g+=`<path d="${dline}" fill="none" stroke="#ef4444" stroke-width="2" stroke-dasharray="4 4"/><path d="${iline}" fill="none" stroke="#39d6a3" stroke-width="2.5"/><circle data-tooltip="Initial inventory I₀: ${Math.round(initialInventory)} units" cx="${pl}" cy="${yOf(initialInventory).toFixed(1)}" r="4" fill="#39d6a3" stroke="#0b1220" stroke-width="1"/><text x="${pl+7}" y="${(yOf(initialInventory)-7).toFixed(1)}" fill="#39d6a3" font-size="10" font-family="monospace">I₀</text>`;
+  const lg=`<g font-family="monospace" font-size="11">
+    <rect x="${pl}" y="3" width="11" height="11" fill="#2563eb"/><text x="${pl+16}" y="12.5" fill="#a8c4e0">Regular</text>
+    <rect x="${pl+80}" y="3" width="11" height="11" fill="#f59e0b"/><text x="${pl+96}" y="12.5" fill="#a8c4e0">Overtime</text>
+    <circle cx="${pl+178}" cy="8.5" r="4" fill="#ef4444"/><text x="${pl+188}" y="12.5" fill="#a8c4e0">Demand</text><line x1="${pl+250}" y1="8.5" x2="${pl+263}" y2="8.5" stroke="#39d6a3" stroke-width="2"/><text x="${pl+270}" y="12.5" fill="#a8c4e0">I₀ → Iₜ</text></g>`;
+  return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">${g}${lg}</svg>`;
+}
+
+/* ====================== Option 2 · Facility Layout (squared-Euclidean mini-sum) ====================== */
+const EXIST_DEFAULT=[[0,10],[15,0],[25,30]];          // 3 existing fixed machines
+const W_DEFAULT=[[10,6,4],[3,2,16],[8,5,2],[4,12,3]]; // new j -> existing i flow
+const V_DEFAULT={'0-1':12,'0-2':5,'0-3':4,'1-2':8,'1-3':6,'2-3':10}; // new-new flow
+
+function refreshLayout(){
+  const cfg=document.getElementById('layoutConfig');
+  const hint=document.getElementById('layoutHint');
+  document.getElementById('layoutFormula').style.display='none';
+  document.getElementById('layoutResult').innerHTML='';
+  if(!agBranch){
+    cfg.innerHTML='<div class="hint" style="color:var(--dim)">Solve Phase 1 first — the placement set-up appears here once the branch is known.</div>';
+    return;
+  }
+  if(agBranch.machines===0){
+    hint.textContent='Configuration A — current layout is sufficient, so no placement problem is generated.';
+    cfg.innerHTML='<div class="branch a" style="margin-top:4px"><div class="big">✓</div><div class="txt"><div class="cfg">No placement required</div>With zero overtime months the workshop has spare capacity. No new machines, no layout optimisation, expansion cost <b>$0</b>.</div></div>';
+    return;
+  }
+  buildLayoutInputs(agBranch.machines);
+}
+
+function buildLayoutInputs(n){
+  const hint=document.getElementById('layoutHint');
+  hint.innerHTML=`Configuration B requires placing <b>${n} new machine${n>1?'s':''}</b> using the <b>${n===1?'single':'multi'}-facility</b> squared-Euclidean mini-sum method. Enter the existing machine coordinates and the material-flow weights.`;
+  const cfg=document.getElementById('layoutConfig');
+  let h='';
+
+  // existing machines
+  h+='<div class="subhead">Existing fixed machines — coordinates (a, b)</div>';
+  h+='<div style="overflow-x:auto"><table class="lmtx"><thead><tr><th></th><th>a (x)</th><th>b (y)</th></tr></thead><tbody>';
+  for(let i=0;i<3;i++){
+    h+=`<tr><th>P${i+1}</th><td><input type="number" id="lx_e${i}_a" value="${EXIST_DEFAULT[i][0]}"></td><td><input type="number" id="lx_e${i}_b" value="${EXIST_DEFAULT[i][1]}"></td></tr>`;
+  }
+  h+='</tbody></table></div>';
+
+  // w matrix: new j -> existing i
+  h+='<div class="subhead">Material flow w(new → existing)</div>';
+  h+='<div style="overflow-x:auto"><table class="lmtx"><thead><tr><th></th><th>P1</th><th>P2</th><th>P3</th></tr></thead><tbody>';
+  for(let j=0;j<n;j++){
+    h+=`<tr><th>New M${j+1}</th>`;
+    for(let i=0;i<3;i++) h+=`<td><input type="number" id="lx_w_${j}_${i}" value="${W_DEFAULT[j][i]}"></td>`;
+    h+='</tr>';
+  }
+  h+='</tbody></table></div>';
+
+  // v matrix: new-new (only if n>=2)
+  if(n>=2){
+    h+='<div class="subhead">Material flow v(new ↔ new)</div>';
+    h+='<div style="overflow-x:auto"><table class="lmtx"><thead><tr><th></th>';
+    for(let k=0;k<n;k++) h+=`<th>M${k+1}</th>`;
+    h+='</tr></thead><tbody>';
+    for(let j=0;j<n;j++){
+      h+=`<tr><th>New M${j+1}</th>`;
+      for(let k=0;k<n;k++){
+        if(j===k){h+='<td class="dg">—</td>';}
+        else if(j<k){const v=V_DEFAULT[`${j}-${k}`]||5; h+=`<td><input type="number" id="lx_v_${j}_${k}" value="${v}" oninput="syncV(${j},${k},this.value)"></td>`;}
+        else {h+=`<td class="dg" id="lx_vm_${j}_${k}">${V_DEFAULT[`${k}-${j}`]||5}</td>`;}
+      }
+      h+='</tr>';
+    }
+    h+='</tbody></table></div>';
+  }
+
+  h+='<div class="actions" style="margin-top:18px"><button class="btn" onclick="solveLayout()">Build objective &amp; solve</button></div>';
+  cfg.innerHTML=h;
+}
+function syncV(j,k,val){const m=document.getElementById(`lx_vm_${k}_${j}`); if(m) m.textContent=val;}
+
+function readLayout(n){
+  const gv=id=>{const v=parseFloat(document.getElementById(id).value);return isFinite(v)?v:0;};
+  const P=[]; for(let i=0;i<3;i++) P.push([gv(`lx_e${i}_a`),gv(`lx_e${i}_b`)]);
+  const w=[]; for(let j=0;j<n;j++){const row=[];for(let i=0;i<3;i++)row.push(gv(`lx_w_${j}_${i}`));w.push(row);}
+  const v=Array.from({length:n},()=>Array(n).fill(0));
+  for(let j=0;j<n;j++)for(let k=j+1;k<n;k++){const val=gv(`lx_v_${j}_${k}`);v[j][k]=val;v[k][j]=val;}
+  return {P,w,v};
+}
+
+// Gaussian elimination Ax=b (n<=4)
+function solveLinear(A,b){
+  const n=A.length, M=A.map((r,i)=>[...r,b[i]]);
+  for(let c=0;c<n;c++){
+    let p=c; for(let r=c+1;r<n;r++) if(Math.abs(M[r][c])>Math.abs(M[p][c])) p=r;
+    [M[c],M[p]]=[M[p],M[c]];
+    const piv=M[c][c]||1e-12;
+    for(let r=0;r<n;r++){ if(r===c) continue; const f=M[r][c]/piv; for(let k=c;k<=n;k++) M[r][k]-=f*M[c][k]; }
+  }
+  return M.map((r,i)=>r[n]/(M[i][i]||1e-12));
+}
+
+function buildLayoutFormula(n,P,w,v,sol){
+  const sub=s=>s; // helper
+  let s='';
+  // objective
+  s+=`<span class="ttl">Non-linear objective — minimise total weighted squared-Euclidean distance</span>\n  f = `;
+  const terms=[];
+  for(let j=0;j<n;j++)for(let k=j+1;k<n;k++){ if(v[j][k]>0) terms.push(`${v[j][k]}·[(x${j+1}−x${k+1})² + (y${j+1}−y${k+1})²]`); }
+  for(let j=0;j<n;j++)for(let i=0;i<3;i++){ if(w[j][i]>0) terms.push(`${w[j][i]}·[(x${j+1}−${P[i][0]})² + (y${j+1}−${P[i][1]})²]`); }
+  s+=terms.join('\n    + ')+'\n\n';
+  // optimality system (∂f/∂x_j = 0)
+  s+=`<span class="ttl">First-order optimality conditions  (∂f/∂x_j = 0 → linear system)</span>\n`;
+  for(let j=0;j<n;j++){
+    let diag=0; for(let k=0;k<n;k++) if(k!==j) diag+=v[j][k]; for(let i=0;i<3;i++) diag+=w[j][i];
+    let lhs=`${diag}·x${j+1}`;
+    for(let k=0;k<n;k++) if(k!==j && v[j][k]>0) lhs+=` − ${v[j][k]}·x${k+1}`;
+    let rhs=0; for(let i=0;i<3;i++) rhs+=w[j][i]*P[i][0];
+    s+=`  ${lhs} = ${rhs}\n`;
+  }
+  s+=`  (the y-system is identical with b_i in place of a_i)\n\n`;
+  s+=`<span class="ttl">Optimal coordinates</span>\n`;
+  for(let j=0;j<n;j++) s+=`  New M${j+1}* = ( <span class="res">${sol.x[j].toFixed(2)}</span> , <span class="res">${sol.y[j].toFixed(2)}</span> )\n`;
+  return s;
+}
+
+function solveLayout(){
+  const n=agBranch.machines;
+  const {P,w,v}=readLayout(n);
+  // build A, bx, by
+  const A=Array.from({length:n},()=>Array(n).fill(0));
+  const bx=Array(n).fill(0), by=Array(n).fill(0);
+  for(let j=0;j<n;j++){
+    let diag=0;
+    for(let k=0;k<n;k++) if(k!==j){ diag+=v[j][k]; A[j][k]=-v[j][k]; }
+    for(let i=0;i<3;i++) diag+=w[j][i];
+    A[j][j]=diag;
+    for(let i=0;i<3;i++){ bx[j]+=w[j][i]*P[i][0]; by[j]+=w[j][i]*P[i][1]; }
+  }
+  const x=solveLinear(A,bx), y=solveLinear(A,by);
+  const sol={x,y};
+  document.getElementById('layoutFormula').style.display='block';
+  document.getElementById('layoutFormula').innerHTML=buildLayoutFormula(n,P,w,v,sol);
+
+  const newPts=x.map((xi,j)=>[xi,y[j]]);
+  let chips=newPts.map((p,j)=>`<div class="coordchip"><span class="k">New M${j+1}</span><b>(${p[0].toFixed(2)}, ${p[1].toFixed(2)})</b></div>`).join('');
+  document.getElementById('layoutResult').innerHTML=`
+    <div style="margin-top:16px">${chips}</div>
+    <div class="layoutbox">${drawLayout(P,newPts,w,v)}</div>`;
+  document.getElementById('layoutResult').scrollIntoView({behavior:'smooth',block:'nearest'});
+  layoutReport={n,P,newPts,w,v,formula:buildLayoutFormula(n,P,w,v,sol),mode:agBranch.mode};
+  updateSummary();
+}
+let layoutReport=null;
+
+function drawLayout(P,newPts,w,v,light){
+  const W=560,H=420,pad=46;
+  const all=[...P,...newPts];
+  let minX=Math.min(...all.map(p=>p[0])), maxX=Math.max(...all.map(p=>p[0]));
+  let minY=Math.min(...all.map(p=>p[1])), maxY=Math.max(...all.map(p=>p[1]));
+  const dx=(maxX-minX)||1, dy=(maxY-minY)||1; minX-=dx*0.12;maxX+=dx*0.12;minY-=dy*0.12;maxY+=dy*0.12;
+  const sx=v0=>pad+((v0-minX)/(maxX-minX))*(W-2*pad);
+  const sy=v0=>H-pad-((v0-minY)/(maxY-minY))*(H-2*pad);
+  const labelCol=light?'#475569':'#a8c4e0', axisCol=light?'#cbd5e1':'#2b3a52';
+  const n=newPts.length;
+  let g='';
+  // axes
+  g+=`<line x1="${pad}" y1="${H-pad}" x2="${W-pad}" y2="${H-pad}" stroke="${axisCol}"/>`;
+  g+=`<line x1="${pad}" y1="${pad}" x2="${pad}" y2="${H-pad}" stroke="${axisCol}"/>`;
+  g+=`<text x="${W-pad}" y="${H-pad+22}" text-anchor="end" font-size="10" font-family="monospace" fill="${labelCol}">x</text>`;
+  g+=`<text x="${pad-10}" y="${pad}" text-anchor="end" font-size="10" font-family="monospace" fill="${labelCol}">y</text>`;
+  const maxFlow=Math.max(1,...w.flat(),...v.flat());
+  // existing-new flows
+  for(let j=0;j<n;j++)for(let i=0;i<3;i++){ if(w[j][i]>0){
+    g+=`<line x1="${sx(newPts[j][0]).toFixed(1)}" y1="${sy(newPts[j][1]).toFixed(1)}" x2="${sx(P[i][0]).toFixed(1)}" y2="${sy(P[i][1]).toFixed(1)}" stroke="#2563eb" stroke-width="${(0.6+2.4*w[j][i]/maxFlow).toFixed(2)}" stroke-opacity="0.45"/>`;
+  }}
+  // new-new flows
+  for(let j=0;j<n;j++)for(let k=j+1;k<n;k++){ if(v[j][k]>0){
+    g+=`<line x1="${sx(newPts[j][0]).toFixed(1)}" y1="${sy(newPts[j][1]).toFixed(1)}" x2="${sx(newPts[k][0]).toFixed(1)}" y2="${sy(newPts[k][1]).toFixed(1)}" stroke="#22c55e" stroke-width="${(0.8+2.6*v[j][k]/maxFlow).toFixed(2)}" stroke-opacity="0.6" stroke-dasharray="5 4"/>`;
+  }}
+  // existing machines (squares)
+  P.forEach((p,i)=>{
+    const X=sx(p[0]),Y=sy(p[1]);
+    g+=`<rect data-tooltip="Existing machine P${i+1} · x=${p[0]}, y=${p[1]}" x="${(X-11).toFixed(1)}" y="${(Y-11).toFixed(1)}" width="22" height="22" rx="3" fill="#1e293b" stroke="#64748b" stroke-width="2"/>`;
+    g+=`<text x="${X.toFixed(1)}" y="${(Y+4).toFixed(1)}" text-anchor="middle" font-family="'Space Grotesk',sans-serif" font-weight="700" font-size="11" fill="#f0f6ff">P${i+1}</text>`;
+    g+=`<text x="${X.toFixed(1)}" y="${(Y-16).toFixed(1)}" text-anchor="middle" font-size="9.5" font-family="monospace" fill="${labelCol}">(${p[0]},${p[1]})</text>`;
+  });
+  // new machines (gold circles)
+  newPts.forEach((p,j)=>{
+    const X=sx(p[0]),Y=sy(p[1]);
+    g+=`<circle data-tooltip="Optimal new machine M${j+1} · x=${p[0].toFixed(2)}, y=${p[1].toFixed(2)}" cx="${X.toFixed(1)}" cy="${Y.toFixed(1)}" r="14" fill="#f59e0b" stroke="#fff" stroke-width="2"/>`;
+    g+=`<text x="${X.toFixed(1)}" y="${(Y+4).toFixed(1)}" text-anchor="middle" font-family="'Space Grotesk',sans-serif" font-weight="700" font-size="11" fill="#0b1220">M${j+1}</text>`;
+    g+=`<text x="${X.toFixed(1)}" y="${(Y-19).toFixed(1)}" text-anchor="middle" font-size="9.5" font-family="monospace" fill="#f59e0b">(${p[0].toFixed(1)},${p[1].toFixed(1)})</text>`;
+  });
+  const titleCol=light?'#64748b':'#6b8aaa';
+  return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
+    <text x="${W/2}" y="22" text-anchor="middle" fill="${titleCol}" font-family="monospace" font-size="11">OPTIMAL PLACEMENT · ■ existing fixed · ● new (optimal) · — flow to existing · – – flow new↔new</text>
+    ${g}</svg>`;
+}
+
+/* ====================== Theme + PDF export ====================== */
+function toggleTheme(){
+  const light=document.body.classList.toggle('light');
+  document.getElementById('themeBtn').textContent=light?'☀️ Light':'🌙 Dark';
+}
+
+function exportPDF(){
+  if(!ahpReport && !p2Report && !p3Report && !agReport && !layoutReport){
+    alert('Run at least one analysis first — the AHP ranking, the Phase 2 trade-off, the Phase 3 route, or the Option 2 plan — then export.');
+    return;
+  }
+  document.getElementById('report').innerHTML=buildReport();
+  setTimeout(()=>window.print(),80);
+}
+
+function buildReport(){
+  const now=new Date().toLocaleString('en-CA',{dateStyle:'long',timeStyle:'short'});
+  const M=v=>'$'+v.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const N=v=>v.toLocaleString('en-US',{maximumFractionDigits:2,minimumFractionDigits:2});
+  let h=`<div class="r-page"><div class="r-cover">
+    <div class="r-ey">Global Logistics DSS · Mini Project 2 · Results Report</div>
+    <h1>Sourcing, Routing &amp; Production — Decision Results</h1>
+    <div class="r-meta">ENGG*6291 Supply Chain Management · Summer 2026 · University of Guelph · Dr. Hussien Hegab<br>
+    Team: Junaid · Minghui · M Zeeshan<br>Generated ${now}</div></div>`;
+
+  if(ahpReport){
+    const a=ahpReport;
+    h+=`<div class="r-sec"><h2>Option 1 · Phase 1 — AHP Supplier Selection</h2>
+    <div class="r-note">Criteria weights and final synthesis. All pairwise matrices satisfied CR &lt; 0.10 (criteria CR ${a.critCR.toFixed(3)}).</div>
+    <table class="r-table"><thead><tr><th>Supplier</th>`;
+    a.criteria.forEach((c,ci)=>h+=`<th>${c} (w=${a.cw[ci].toFixed(3)})</th>`);
+    h+=`<th>Total</th><th>Rank</th></tr></thead><tbody>`;
+    a.suppliers.forEach((s,si)=>{
+      const rank=a.order.findIndex(o=>o.i===si)+1;
+      h+=`<tr class="${rank===1?'r-tot':''}"><th>${s}</th>`;
+      a.criteria.forEach((c,ci)=>h+=`<td>${a.cells[si][ci].toFixed(3)}</td>`);
+      h+=`<td>${a.totals[si].toFixed(3)}</td><td>${rank}</td></tr>`;
+    });
+    h+=`</tbody></table>
+    <div class="r-rec">Recommended: <b>${a.winner}</b> (score ${a.order[0].t.toFixed(3)}). Runner-up: <b>${a.runner}</b> (${a.order[1].t.toFixed(3)}). Both advance to Phase 2.</div></div>`;
+    h+=`<div class="r-sec"><h2>Option 1 · Phase 1.2 — Supplier Pairwise Calculations</h2><div class="r-note">Complete calculation steps for every supplier-comparison criterion.</div><div class="calc show">${renderAllSupplierCalcs()}</div></div>`;
+  }
+
+  if(p2Report){
+    const {R,tax,names,win}=p2Report;
+    h+=`<div class="r-sec"><h2>Option 1 · Phase 2 — Risk &amp; Green Trade-off</h2>
+    <div class="r-note">Carbon tax ${M(tax)} / tonne CO₂. Total Supply Chain Cost = Economic (TC) + Carbon (CC) + Expected Disruption (EDC).</div>
+    <table class="r-table"><thead><tr><th></th><th>${names[0]}</th><th>${names[1]}</th></tr></thead><tbody>`;
+    const irows=[['Procurement Cost','proc',M],['Transportation Cost','trans',M],['Inventory Cost','inv',M],
+      ['Distance (km)','dist',N],['Shipment Weight (tonnes)','wt',N],['Emission Factor (kgCO₂/t·km)','ef',v=>v.toString()],
+      ['Probability of Disruption','pdis',v=>v.toFixed(2)],['Recovery time (weeks)','rec',v=>v.toString()],['Loss Rate (per week)','loss',M]];
+    irows.forEach(([l,k,f])=>h+=`<tr><th>${l}</th><td>${f(R[0][k])}</td><td>${f(R[1][k])}</td></tr>`);
+    h+=`<tr class="r-sub"><th colspan="3">Monetised summary</th></tr>`;
+    [['Economic Cost (TC)','TC'],['Carbon Cost (CC)','CC'],['Expected Disruption Cost (EDC)','EDC']].forEach(([l,k])=>{
+      h+=`<tr><th>${l}</th><td>${M(R[0][k])}</td><td>${M(R[1][k])}</td></tr>`;
+    });
+    h+=`<tr class="r-tot"><th>Total Supply Chain Cost</th><td>${M(R[0].total)}</td><td>${M(R[1].total)}</td></tr>`;
+    h+=`</tbody></table>
+    <div class="r-rec">Recommended primary supplier: <b>${names[win]}</b> — lowest total supply chain cost (${M(R[win].total)}).</div></div>`;
+  }
+
+  if(p3Report){
+    const p=p3Report;
+    const savedD=distD; distD=p.D; const svg=drawTour(p.tour,true,p.locations); distD=savedD;
+    const locationRows=p.locations?`<table class="r-table" style="max-width:520px"><thead><tr><th>Node</th><th>Ontario location</th></tr></thead><tbody>${p.locations.map((city,i)=>`<tr><th>${String.fromCharCode(65+i)}</th><td>${city}</td></tr>`).join('')}</tbody></table>`:'';
+    const matrixRows=p.D.map((row,i)=>`<tr><th>${String.fromCharCode(65+i)}</th>${row.map(v=>`<td>${Math.round(v)}</td>`).join('')}</tr>`).join('');
+    const matrixTable=`<table class="r-table"><thead><tr><th>km</th>${p.D.map((_,i)=>`<th>${String.fromCharCode(65+i)}</th>`).join('')}</tr></thead><tbody>${matrixRows}</tbody></table>`;
+    h+=`<div class="r-sec"><h2>Option 1 · Phase 3 — Last-Mile TSP Routing</h2>
+    <div class="r-note">Distance-matrix route search. Verified closed tour through every hub.</div>
+    ${locationRows}
+    <table class="r-table" style="max-width:440px"><tbody>
+      <tr><th>Optimal tour</th><td>${p.seq.join(' → ')}</td></tr>
+      <tr class="r-tot"><th>Minimum distance</th><td>${p.dist.toLocaleString()}</td></tr>
+    </tbody></table>
+    <div class="r-route">${svg}</div>
+    <div class="r-note">Calculated route-distance matrix (km)</div>${matrixTable}
+    <div class="r-pre">${p.formula.replace(/<[^>]+>/g,'')}</div></div>`;
+  }
+
+  if(agReport){
+    const {months,cost,ot}=agReport;
+    const r1=v=>v.toLocaleString('en-US',{maximumFractionDigits:1});
+    const mc=ot===0?0:ot<=2?1:ot===3?2:ot===4?3:4;
+    h+=`<div class="r-sec"><h2>Option 2 · Phase 1 — Aggregate Planning LP</h2>
+    <div class="r-note">Six-month plan solved by Simplex. Minimum total cost ${M(cost)}; overtime used in ${ot} month(s).</div>
+    <table class="r-table"><thead><tr><th>Month</th><th>Demand</th><th>Regular</th><th>Overtime</th><th>Inventory</th><th>Workforce</th><th>Hired</th><th>Fired</th></tr></thead><tbody>`;
+    months.forEach((mo,t)=>{h+=`<tr><th>M${t+1}</th><td>${r1(mo.D)}</td><td>${r1(mo.PR)}</td><td>${r1(mo.PO)}</td><td>${r1(mo.I)}</td><td>${r1(mo.W)}</td><td>${r1(mo.H)}</td><td>${r1(mo.F)}</td></tr>`;});
+    h+=`</tbody></table>
+    <div class="r-pre">${(agReport.formula||'').replace(/<[^>]+>/g,'')}</div>
+    <div class="r-rec">Facility branch: ${ot===0?'<b>Configuration A</b> — current layout sufficient, expansion cost $0.':'<b>Configuration B</b> — '+mc+' new machine(s) required via the '+(mc<=1?'single':'multi')+'-facility squared-Euclidean method.'}</div></div>`;
+  }
+
+  if(approachData){
+    const a=approachData;
+    h+=`<div class="r-sec"><h2>Option 2 · Planning Strategy Comparison</h2><div class="r-note">Chase, Level and Balance strategies calculated from the same demand plan.</div><table class="r-table"><thead><tr><th>Strategy</th><th>Production</th><th>Inventory</th><th>Hire / Fire</th><th>Overtime</th><th>Total cost</th></tr></thead><tbody>${a.rows.map(r=>`<tr class="${r.name===a.best.name?'r-tot':''}"><th>${r.name}</th><td>${M(r.production)}</td><td>${M(r.inventory)}</td><td>${M(r.hirefire)}</td><td>${M(r.overtime)}</td><td>${M(r.cost)}</td></tr>`).join('')}</tbody></table><div class="r-rec">Lowest-cost strategy: <b>${a.best.name}</b> at ${M(a.best.cost)}.</div></div>`;
+  }
+
+  if(layoutReport){
+    const p=layoutReport;
+    const svg=drawLayout(p.P,p.newPts,p.w,p.v,true);
+    const chips=p.newPts.map((pt,j)=>`New M${j+1}* = (${pt[0].toFixed(2)}, ${pt[1].toFixed(2)})`).join(' · ');
+    h+=`<div class="r-sec"><h2>Option 2 · Phase 2 — Facility Layout (${p.mode}-facility)</h2>
+    <div class="r-note">Squared-Euclidean mini-sum placement of ${p.n} new machine(s).</div>
+    <div class="r-route">${svg}</div>
+    <div class="r-pre">${p.formula.replace(/<[^>]+>/g,'')}</div>
+    <div class="r-rec">Optimal coordinates: <b>${chips}</b></div></div>`;
+  }
+
+  h+='</div>';
+  return h;
+}
+
+/* ====================== Exec summary banner ====================== */
+function updateSummary(){
+  const chips=[];
+  if(ahpReport) chips.push(`<span class="echip"><span class="dot"></span>AHP: <b>${ahpReport.winner}</b> → ${ahpReport.runner}</span>`);
+  if(p2Report) chips.push(`<span class="echip"><span class="dot"></span>Risk: <b>${p2Report.names[p2Report.win]}</b> ${money(p2Report.R[p2Report.win].total)}</span>`);
+  if(p3Report) chips.push(`<span class="echip"><span class="dot"></span>TSP: <b>${p3Report.dist.toLocaleString()}</b> · closed route</span>`);
+  if(agReport){const mc=machineCount(agReport.ot);chips.push(`<span class="echip"><span class="dot"></span>LP: ${money(agReport.cost)} · ${agReport.ot===0?'Config A':'Config B / '+mc+' mach.'}</span>`);}
+  if(layoutReport) chips.push(`<span class="echip"><span class="dot"></span>Layout: <b>${layoutReport.n}</b> placed (${layoutReport.mode})</span>`);
+  const bar=document.getElementById('execbar');
+  if(chips.length){document.getElementById('execChips').innerHTML=chips.join('');bar.classList.add('show');}
+  refreshDecisionCenter();
+}
+
+/* ====================== Decision workspace ====================== */
+const DRAFT_KEY='global-logistics-dss-draft-v1';
+let draftTimer=null;
+
+function scenarioSnapshot(){
+  return {v:2,ahp:{crit:state['crit'],sup0:state['sup0'],sup1:state['sup1'],sup2:state['sup2'],sup3:state['sup3']},
+    p2:readInputs(p2ids()),tsp:distD,agg:readInputs(agids()),savedAt:new Date().toISOString()};
+}
+function setDraftStatus(message){const el=document.getElementById('draftStatus');if(el)el.textContent=message;}
+function saveDraft(quiet=false){
+  try{localStorage.setItem(DRAFT_KEY,JSON.stringify(scenarioSnapshot()));setDraftStatus(quiet?'Autosaved locally':'Draft saved locally');}
+  catch(err){setDraftStatus('Local draft unavailable');}
+}
+function clearDraft(){localStorage.removeItem(DRAFT_KEY);setDraftStatus('Local draft cleared');}
+function applyWorkspaceSnapshot(sc){
+  if(sc.ahp){['crit','sup0','sup1','sup2','sup3'].forEach(k=>{if(sc.ahp[k])state[k]=sc.ahp[k];});}
+  critMode(critViewMode);refreshCrit();switchCrit(activeCrit);
+  if(sc.p2)writeInputs(sc.p2);
+  if(sc.tsp){distD=sc.tsp.map(r=>r.slice());buildDistMtx();}
+  if(sc.agg)writeInputs(sc.agg);
+  refreshDecisionCenter();
+}
+function restoreDraft(){
+  try{const raw=localStorage.getItem(DRAFT_KEY);if(!raw)return;const sc=JSON.parse(raw);applyWorkspaceSnapshot(sc);setDraftStatus('Restored local draft');}
+  catch(err){setDraftStatus('Local draft could not be restored');}
+}
+function refreshDecisionCenter(){
+  const mount=document.getElementById('decisionProgress');if(!mount)return;
+  const steps=[
+    ['Supplier ranking',ahpReport,ahpReport?ahpReport.winner:'Awaiting AHP'],
+    ['Risk trade-off',p2Report,p2Report?`${p2Report.names[p2Report.win]} recommended`:'Awaiting cost/risk run'],
+    ['Route plan',p3Report,p3Report?`${p3Report.dist.toLocaleString()} total distance`:'Awaiting route solve'],
+    ['Production plan',agReport,agReport?`${agReport.ot} overtime month(s)`:'Awaiting LP solve'],
+    ['Facility layout',layoutReport,layoutReport?`${layoutReport.n} machine(s) placed`:'Awaiting placement']
+  ];
+  mount.innerHTML=steps.map(([k,done,v])=>`<div class="progress-card ${done?'done':''}"><div class="k">${done?'● Ready':'○ Pending'} · ${k}</div><div class="v">${v}</div></div>`).join('');
+}
+function applyPreset(kind){
+  loadAhpDemo();synthesize();resetP2();loadAggSample();
+  const set=(id,value)=>{const el=document.getElementById(id);if(el)el.value=value;};
+  if(kind==='baseline'){
+    set('p2_tax',120);
+    setDraftStatus('Balanced baseline configured');
+  }else if(kind==='resilience'){
+    set('p2_tax',180);set('p2_0_sd',7.5);set('p2_0_rec',16);set('p2_0_loss',110000);
+    set('p2_1_dist',2800);set('p2_1_sd',2.8);set('p2_1_rec',4);set('p2_1_loss',60000);
+    set('agD2',1500);set('agD5',1550);set('agOT',500);
+    setDraftStatus('Resilience shock configured');
+  }else{
+    set('p2_tax',350);set('p2_0_ef',0.04);set('p2_1_ef',0.12);set('p2_1_dist',2200);
+    set('agCI',5);set('agCO',24);
+    setDraftStatus('Low-carbon push configured');
+  }
+  runP2();saveDraft(true);refreshDecisionCenter();
+}
+
+/* ====================== Scenario save / load ====================== */
+function download(name,text,type){const b=new Blob([text],{type});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),1500);}
+function readInputs(ids){const o={};ids.forEach(id=>{const el=document.getElementById(id);if(el)o[id]=el.value;});return o;}
+function writeInputs(o){Object.keys(o||{}).forEach(id=>{const el=document.getElementById(id);if(el)el.value=o[id];});}
+function p2ids(){const a=['p2_tax'];for(let s=0;s<2;s++)['proc','trans','inv','dist','wt','ef','mu','sd','thr','rec','loss'].forEach(k=>a.push(`p2_${s}_${k}`));return a;}
+function agids(){return ['agD0','agD1','agD2','agD3','agD4','agD5','agI0','agW0','agA','agOT','agCR','agCO','agCI','agCH','agCF'];}
+function saveScenario(){
+  const sc=scenarioSnapshot();
+  download('global_logistics_scenario.json',JSON.stringify(sc,null,2),'application/json');
+}
+function loadScenario(e){
+  const f=e.target.files[0];if(!f)return;const r=new FileReader();
+  r.onload=()=>{
+    try{
+      const sc=JSON.parse(r.result);
+      applyWorkspaceSnapshot(sc);
+      e.target.value='';
+      alert('Scenario loaded. Re-run each phase to compute results with the new inputs.');
+    }catch(err){alert('Could not read scenario file: '+err.message);}
+  };
+  r.readAsText(f);
+}
+function resetAll(){ if(confirm('Reset every input and result to defaults? This reloads the tool.')) location.reload(); }
+
+/* ====================== CSV export ====================== */
+function exportCSV(){
+  if(!ahpReport && !p2Report && !p3Report && !agReport && !layoutReport){alert('Run an analysis first, then export CSV.');return;}
+  const L=[];const esc=v=>'"'+String(v).replace(/"/g,'""')+'"';
+  const row=arr=>L.push(arr.map(esc).join(','));
+  row(['Global Logistics DSS — Results Export']);row([]);
+  if(ahpReport){const a=ahpReport;row(['AHP — Supplier scores']);row(['Supplier',...a.criteria,'Total','Rank']);
+    a.suppliers.forEach((s,si)=>{const rank=a.order.findIndex(o=>o.i===si)+1;row([s,...a.cells[si].map(v=>v.toFixed(3)),a.totals[si].toFixed(3),rank]);});
+    row(['Winner',a.winner]);row([]);}
+  if(p2Report){const{R,names}=p2Report;row(['Risk & Green — Trade-off']);row(['Component',names[0],names[1]]);
+    [['Procurement','proc'],['Transport','trans'],['Inventory','inv'],['Economic TC','TC'],['Carbon CC','CC'],['Expected Disruption EDC','EDC'],['Total','total']].forEach(([l,k])=>row([l,R[0][k].toFixed(2),R[1][k].toFixed(2)]));
+    row(['P(disruption)',R[0].pdis.toFixed(4),R[1].pdis.toFixed(4)]);row(['Recommended',names[p2Report.win]]);row([]);}
+  if(p3Report){row(['TSP — Last-mile routing']);row(['Optimal tour',p3Report.seq.join(' -> ')]);row(['Min distance',p3Report.dist]);row(['Route check','Closed route; every hub visited once']);row([]);}
+  if(agReport){row(['Aggregate Planning — Roadmap']);row(['Month','Demand','Regular','Overtime','Inventory','Workforce','Hired','Fired']);
+    agReport.months.forEach((m,t)=>row(['M'+(t+1),m.D,m.PR.toFixed(0),m.PO.toFixed(0),m.I.toFixed(0),m.W.toFixed(0),m.H.toFixed(0),m.F.toFixed(0)]));
+    row(['Total cost',agReport.cost]);row(['Overtime months',agReport.ot]);row([]);}
+  if(layoutReport){row(['Facility Layout — Optimal coordinates']);row(['Machine','x','y']);
+    layoutReport.newPts.forEach((pt,j)=>row(['New M'+(j+1),pt[0].toFixed(2),pt[1].toFixed(2)]));row([]);}
+  download('global_logistics_results.csv',L.join('\r\n'),'text/csv');
+}
+
+/* ====================== AHP radar ====================== */
+function drawRadar(crit,sups,seriesW){
+  // seriesW[si][ci] = supplier si weight under criterion ci
+  const n=crit.length, W=460, H=360, cx=W/2, cy=H/2+6, R=120;
+  const cols=['#2563eb','#22c55e','#f59e0b','#14b8a6'];
+  const maxV=Math.max(...seriesW.flat(),0.5);
+  const pt=(ci,val)=>{const a=-Math.PI/2+ci*2*Math.PI/n;const r=R*val/maxV;return[cx+r*Math.cos(a),cy+r*Math.sin(a)];};
+  let g='';
+  // rings
+  for(let ring=1;ring<=4;ring++){let pts='';for(let ci=0;ci<n;ci++){const a=-Math.PI/2+ci*2*Math.PI/n;const r=R*ring/4;pts+=`${(cx+r*Math.cos(a)).toFixed(1)},${(cy+r*Math.sin(a)).toFixed(1)} `;}g+=`<polygon points="${pts}" fill="none" stroke="#ffffff" stroke-opacity="0.08"/>`;}
+  // axes + labels
+  for(let ci=0;ci<n;ci++){const a=-Math.PI/2+ci*2*Math.PI/n;const ex=cx+R*Math.cos(a),ey=cy+R*Math.sin(a);g+=`<line x1="${cx}" y1="${cy}" x2="${ex.toFixed(1)}" y2="${ey.toFixed(1)}" stroke="#2b3a52"/>`;const lx=cx+(R+22)*Math.cos(a),ly=cy+(R+22)*Math.sin(a);g+=`<text x="${lx.toFixed(1)}" y="${(ly+4).toFixed(1)}" text-anchor="middle" font-size="11" font-family="monospace" fill="#a8c4e0">${crit[ci]}</text>`;}
+  // supplier polygons
+  sups.forEach((s,si)=>{let pts='';for(let ci=0;ci<n;ci++){const[x,y]=pt(ci,seriesW[si][ci]);pts+=`${x.toFixed(1)},${y.toFixed(1)} `;}const tip=`${s} · ${crit.map((c,ci)=>`${c}: ${seriesW[si][ci].toFixed(3)}`).join(' | ')}`;g+=`<polygon data-tooltip="${tip}" points="${pts}" fill="${cols[si]}" fill-opacity="0.12" stroke="${cols[si]}" stroke-width="2"/>`;});
+  const leg=sups.map((s,si)=>`<span><i style="background:${cols[si]}"></i>${s}</span>`).join('');
+  return `<div class="radarbox"><svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg"><text x="${cx}" y="18" text-anchor="middle" fill="#6b8aaa" font-family="monospace" font-size="11">SUPPLIER PROFILE ACROSS CRITERIA</text>${g}</svg></div><div class="radarleg">${leg}</div>`;
+}
+
+/* ====================== Graph hover tooltips ====================== */
+let svgTooltip=null;
+function initGraphTooltips(){
+  svgTooltip=document.createElement('div');svgTooltip.className='svg-tooltip';document.body.appendChild(svgTooltip);
+  document.addEventListener('pointerover',e=>{const el=e.target.closest?.('[data-tooltip]');if(!el)return;svgTooltip.textContent=el.dataset.tooltip;svgTooltip.classList.add('show');});
+  document.addEventListener('pointermove',e=>{if(svgTooltip?.classList.contains('show')){svgTooltip.style.left=`${e.clientX}px`;svgTooltip.style.top=`${e.clientY}px`;}});
+  document.addEventListener('pointerout',e=>{if(e.target.closest?.('[data-tooltip]'))svgTooltip.classList.remove('show');});
+}
+
+/* ====================== Init ====================== */
+critMode('guided');
+refreshCrit();
+buildSupTabs();
+buildP2();
+updateHandoff();
+buildDistMtx();
+buildOntarioSelectors();
+document.addEventListener('change',e=>{if(e.target.matches('#originCity,[id^="routeCity"]')){refreshOntarioSelectOptions();refreshOntarioMap();}});
+refreshDecisionCenter();
+restoreDraft();
+document.addEventListener('input',()=>{clearTimeout(draftTimer);draftTimer=setTimeout(()=>saveDraft(true),500);});
+initGraphTooltips();
+</script>
+</body>
+</html>
